@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: java_app_test
+    ports:
+      - "8080:8080"
+    depends_on:
+      - dbtest
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5431/mydbtest
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: test
+
+
+  dbtest:
+    image: postgres:15
+    container_name: postgres_db_test
+    restart: always
+    environment:
+      POSTGRES_DB: mydbtest
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5431:5432"
+    volumes:
+      - db_test_data:/var/lib/postgresql/data
+
+
+volumes:
+  db_test_data:
