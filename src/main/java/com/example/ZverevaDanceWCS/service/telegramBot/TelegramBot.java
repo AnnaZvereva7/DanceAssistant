@@ -82,9 +82,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                 sendMessage(chatId, botAdmin.unpaidLessons(addInfo));
                 break;
             case "/lesson_completed": //01.01.25 [id] (если без id то все уроки за дату выполнены)
-                HashMap<Long, String> answers = botAdmin.lessonCompleted(addInfo);
-                for (Map.Entry<Long, String> entry : answers.entrySet()) {
-                    sendMessage(entry.getKey(), entry.getValue());
+                try {
+                    HashMap<Long, String> answers = botAdmin.lessonCompleted(addInfo);
+                    for (Map.Entry<Long, String> entry : answers.entrySet()) {
+                        sendMessage(entry.getKey(), entry.getValue());
+                    }
+                } catch (RuntimeException e) {
+                    sendMessage(Constant.adminChatId, e.getMessage());
                 }
                 break;
             case "/student_change": //student_change_status:id newStatus
@@ -125,6 +129,47 @@ public class TelegramBot extends TelegramLongPollingBot {
                         sendMessage(entry.getKey(), entry.getValue());
                     }
                 } catch (RuntimeException e) {
+                    sendMessage(Constant.adminChatId, e.getMessage());
+                }
+                break;
+            case "/payment" : //payment:id-sum
+                try {
+                    HashMap<Long, String> response = botAdmin.paymentReceived(addInfo);
+                    for(Map.Entry<Long, String> entry: response.entrySet()) {
+                        sendMessage(entry.getKey(), entry.getValue());
+                    }
+                } catch (RuntimeException e) {
+                    sendMessage(Constant.adminChatId, "Платеж не внесен. "+e.getMessage());
+                }
+                break;
+            case "/add_schedule"://add_schedule:id-dayOfWeek-time
+                try {
+                    sendMessage(Constant.adminChatId, botAdmin.addSchedule(addInfo));
+                } catch (RuntimeException e) {
+                    sendMessage(Constant.adminChatId, e.getMessage());
+                }
+                break;
+            case "/cancel_lesson": //cancel_lesson:lessonId
+                try {
+                    HashMap<Long,String> response= botAdmin.cancelLesson(addInfo);
+                    for(Map.Entry<Long, String> entry: response.entrySet()) {
+                        sendMessage(entry.getKey(), entry.getValue());
+                    }
+                } catch (RuntimeException e ) {
+                    sendMessage(Constant.adminChatId, e.getMessage());
+                }
+                break;
+            case "/existed_to_google":
+                botAdmin.existedToGoogle();
+                sendMessage(Constant.adminChatId, "All lessons added");
+                break;
+            case "/send_bill": //send_bill:studentId
+                try{
+                    HashMap<Long, String> response = botAdmin.sendBill(addInfo);
+                    for(Map.Entry<Long, String> entry: response.entrySet()) {
+                        sendMessage(entry.getKey(), entry.getValue());
+                    }
+                } catch (RuntimeException e ) {
                     sendMessage(Constant.adminChatId, e.getMessage());
                 }
                 break;

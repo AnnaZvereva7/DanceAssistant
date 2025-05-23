@@ -1,5 +1,6 @@
 package com.example.ZverevaDanceWCS.service.telegramBot;
 
+import com.example.ZverevaDanceWCS.service.calendar.GoogleCalendarService;
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.exception.CommandNotRecognizedException;
 import com.example.ZverevaDanceWCS.service.model.exception.WrongDateException;
@@ -7,14 +8,20 @@ import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonAdminDAO;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
+import com.example.ZverevaDanceWCS.service.model.payments.Payment;
+import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
 import com.example.ZverevaDanceWCS.service.model.user.*;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,15 +30,23 @@ import java.util.stream.Collectors;
 @Component
 public class TelegramBotAdmin {
 
-    @Autowired
+
     final UserService userService;
-    @Autowired
+
     final LessonService lessonService;
 
-    public TelegramBotAdmin(UserService userService, LessonService lessonService) {
+    final PaymentService paymentService;
+
+    final GoogleCalendarService calendarService;
+
+    @Autowired
+    public TelegramBotAdmin(UserService userService, LessonService lessonService, PaymentService paymentService, GoogleCalendarService calendarService) {
         this.userService = userService;
         this.lessonService = lessonService;
+        this.paymentService = paymentService;
+        this.calendarService = calendarService;
     }
+
 
     public String printMenuAdmin() {
         StringBuilder menu = new StringBuilder("You can use one of these commands: \n");
@@ -51,22 +66,151 @@ public class TelegramBotAdmin {
 
         menu.append("/show_plans:[id]\n");
         //menu.append("/cancel_lesson:id-[01.01.25]\n"); //todo
-       //menu.append("/payment:id-sum\n"); //todo
+       menu.append("/payment:id-sum\n");
         menu.append("/balance:[id]\n");
         menu.append("/add_recap:lessonId-recap\n");
+        menu.append("/add_schedule:id-day-09:30\n");
+        menu.append("/cancel_lesson:lessonId\n");
+        menu.append("/send_bill:studentId\n");
+       //"existed_to_google" для разового использования
 
         return menu.toString();
     }
 
-    public HashMap<Long, String> recap (String[] addInfo) { //add_recap:lessonId-recap
+    public HashMap<Long, String> sendBill(String[] addInfo) { //send_bill:studentId
+        HashMap<Long,String> response = new HashMap<>();
+        if(addInfo!=null && addInfo.length==1) {
+            User student = userService.findById(Integer.parseInt(addInfo[0]));
+            List<Lesson> lessons=lessonService.findByStudentIdAndStatus(student.getId(), LessonStatus.COMPLETED).stream()
+                    .sorted()
+                    .collect(Collectors.toList());
+            String answer="Completed lessons:\n";
+            int total=0;
+            for(Lesson lesson:lessons) {
+                answer=answer+lesson.getStartTime().format(Constant.formatterJustDate)+" - "+lesson.getForPayment()+" EUR\n";
+                total+=lesson.getForPayment();
+            }
+            answer=answer+"To pay: "+total+" EUR";
+            if(student.getMessenger()==Messenger.TELEGRAM) {
+                response.put(student.getChatId(), answer);
+            }
+            response.put(Constant.adminChatId, student.getName()+"\n"+answer);
+            return response;
+        } else {
+            throw new CommandNotRecognizedException(Constant.CNR);
+        }
+    }
+
+    public void existedToGoogle() {
+        lessonService.addExistedToGoogle();
+    }
+
+    public HashMap<Long, String> cancelLesson(String[] addInfo) {
         HashMap<Long, String> response = new HashMap<>();
-        if(addInfo!=null&&addInfo.length==2) {
+        if(addInfo!=null && addInfo.length==1) {
+            Lesson lesson=lessonService.findById(Integer.parseInt(addInfo[0]));
+            try {
+                lessonService.cancelLesson(lesson);
+                response.put(Constant.adminChatId, "lesson "+lesson.getStartTime().format(Constant.formatterTimeFirst)+ " was canceled");
+                if(lesson.getStudent().getMessenger()==Messenger.TELEGRAM) {
+                    response.put(lesson.getStudent().getChatId(), "lesson "+lesson.getStartTime().format(Constant.formatterTimeFirst)+ " was canceled");
+                }
+            } catch (RuntimeException e ) {
+                response.put(Constant.adminChatId, e.getMessage());
+            }
+        }else {
+            throw new CommandNotRecognizedException(Constant.CNR);
+        }
+        return response;
+    }
+
+    public String addSchedule(String[] addInfo) {
+        if (addInfo != null && addInfo.length == 3) {
+            User student = userService.findById(Integer.parseInt(addInfo[0]));
+            String answer = "Added next new lesson for "+student.getName()+":\n";
+            DayOfWeek day = DayOfWeek.valueOf(addInfo[1]);
+            LocalTime time = LocalTime.parse(addInfo[2], Constant.timeFormatter);
+            LocalDate date = LocalDate.now().with(TemporalAdjusters.nextOrSame(day));
+            student.setScheduleDay(day);
+            student.setScheduleTime(time);
+            userService.saveUser(student);
+            for (int i=0; i<3; i++) {
+                try{
+                    Boolean lessonExists = lessonExists(date.plusWeeks(i), student, time);
+                    if(!lessonExists) {
+                        Lesson lesson=lessonService.saveNewLesson(new Lesson(student, LocalDateTime.of(date, time).plusWeeks(i), LessonStatus.PLANNED));
+                        answer=answer+lesson.getStartTime().format(Constant.formatterTimeFirst)+" ("+lesson.getId()+")\n";
+                    }
+                } catch (RuntimeException e) {
+                    answer=answer+e.getMessage()+"\n";
+                }
+            }
+            return answer;
+        } else {
+            throw new CommandNotRecognizedException(Constant.CNR);
+        }
+    }
+
+    public boolean lessonExists(LocalDate date, User student, LocalTime time) {
+        if (lessonService.existByStudentDate(date, student.getId())) {
+            Lesson lesson = lessonService.findByStudentDate(date, student.getId());
+            if (!lesson.getStartTime().isEqual(LocalDateTime.of(date, time))&&lesson.getStatus()!=LessonStatus.CANCELED) {
+                throw new RuntimeException("Student " + student.getName() + " already has lesson on " + lesson.getStartTime().format(Constant.formatterTimeFirst)
+                        + " can't add new lesson on time " + time.format(Constant.timeFormatter));
+            } else if (!lesson.getStartTime().isEqual(LocalDateTime.of(date, time))&&lesson.getStatus()==LessonStatus.CANCELED) {
+                return false;
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    @Transactional
+    public HashMap<Long, String> paymentReceived(String[] addInfo) { //payment:studentId-sum
+        HashMap<Long, String> response = new HashMap<>();
+        if (addInfo != null && addInfo.length == 2) {
+            User student = userService.findById(Integer.parseInt(addInfo[0]));
+            log.info("student found id=" + student.getId());
+            int sum = Integer.parseInt(addInfo[1]);
+            Payment newPayment = paymentService.saveNew(student, sum, LocalDate.now());
+            log.info("payment saved id=" + newPayment.getId());
+            int balance = student.getBalance();
+            balance += sum;
+            student.setBalance(balance);
+            log.info("new balance=" + student.getBalance());
+            userService.saveUser(student);
+            String paymentInfo = lessonService.paymentToLessons(student.getId(), newPayment.getSum());
+            response.put(Constant.adminChatId, "New payment from " + student.getName() + " " + newPayment.getSum() + " EUR received. " + paymentInfo);
+            if (student.getMessenger() == Messenger.TELEGRAM) {
+                response.put(student.getChatId(), "Payment " + newPayment.getSum() + " EUR received.");
+            }
+            return response;
+        } else if (addInfo != null && addInfo.length == 1) {
+            User student = userService.findById(Integer.parseInt(addInfo[0]));
+            List<Payment> payments = paymentService.findByStudent(student.getId());
+            String answer = payments.stream()
+                    .map(Payment::toString)
+                    .collect(Collectors.joining("\n"));
+            response.put(Constant.adminChatId, answer);
+            return response;
+        } else {
+            throw new CommandNotRecognizedException(Constant.CNR);
+        }
+    }
+
+    public HashMap<Long, String> recap(String[] addInfo) { //add_recap:lessonId-recap
+        HashMap<Long, String> response = new HashMap<>();
+        if (addInfo != null && addInfo.length == 2) {
             int lessonId = Integer.parseInt(addInfo[0]);
-            Lesson lesson=lessonService.findById(lessonId);
+            Lesson lesson = lessonService.findById(lessonId);
             lesson.setRecap(addInfo[1]);
-            lesson=lessonService.saveLesson(lesson);
+            lesson = lessonService.updateLessonInBase(lesson);
             User student = lesson.getStudent();
-            response.put(student.getChatId(), "New recap "+lesson.getDate()+": "+lesson.getRecap());
+            if (student.getMessenger() == Messenger.TELEGRAM) {
+                response.put(student.getChatId(), "New recap " + lesson.getStartTime().format(Constant.formatterJustDate) + ": " + lesson.getRecap());
+            }
             response.put(Constant.adminChatId, "Recap added");
         } else {
             throw new CommandNotRecognizedException(Constant.CNR);
@@ -75,16 +219,16 @@ public class TelegramBotAdmin {
     }
 
     public String showBalance(String[] addInfo) {
-        if(addInfo==null) {
+        if (addInfo == null) {
             List<User> students = userService.findAll();
             return students.stream()
-                    .filter(student->student.getBalance()!=0)
+                    .filter(student -> student.getBalance() != 0)
                     .map(UserShortDAO::new)
                     .map(UserShortDAO::stringBalance)
                     .collect(Collectors.joining("\n"));
-        } else if(addInfo.length==1) {
-            User student=userService.findById(Integer.parseInt(addInfo[0]));
-            UserShortDAO userDao=new UserShortDAO(student);
+        } else if (addInfo.length == 1) {
+            User student = userService.findById(Integer.parseInt(addInfo[0]));
+            UserShortDAO userDao = new UserShortDAO(student);
             return userDao.stringBalance();
         } else {
             throw new CommandNotRecognizedException(Constant.CNR);
@@ -92,14 +236,14 @@ public class TelegramBotAdmin {
     }
 
     public String showPlans(String[] addInfo) {
-        if(addInfo==null) {
+        if (addInfo == null) {
             List<User> students = userService.findAll();
             return students.stream()
-                    .filter(student->student.getPlans()!=null)
+                    .filter(student -> student.getPlans() != null)
                     .map(UserShortDAO::new)
                     .map(UserShortDAO::stringPlans)
                     .collect(Collectors.joining("\n"));
-        } else if (addInfo.length==1) {
+        } else if (addInfo.length == 1) {
             User student = userService.findById(Integer.parseInt(addInfo[0]));
             UserShortDAO userDao = new UserShortDAO(student);
             return userDao.stringPlans();
@@ -116,21 +260,24 @@ public class TelegramBotAdmin {
                 case "role":
                     student.setRole(UserRole.valueOf(addInfo[2]));
                     student = userService.saveUser(student);
-                    return "New role for "+student.getName()+": " +student.getRole();
+                    return "New role for " + student.getName() + ": " + student.getRole();
                 case "language":
-                    //todo
+                    //todo добавить изменение языка
                     return "";
                 case "name":
                     student.setName(addInfo[2]);
-                    student=userService.saveUser(student);
-                    return "New name for "+student.getChatName()+": "+student.getName();
-                case "plans" :
+                    student = userService.saveUser(student);
+                    return "New name for " + student.getChatName() + ": " + student.getName();
+                case "plans":
                     //todo check email
                     student.setPlans(addInfo[2]);
-                    student=userService.saveUser(student);
-                    return "New plans for "+student.getName();
+                    student = userService.saveUser(student);
+                    return "New plans for " + student.getName();
                 case "birthday":
-                    //todo
+                    //todo изменить день рождения
+                    return "";
+                case "schedule":
+                    //todo убрать уроки по старому расписанию и добавить уроки по новому расписанию
                     return "";
                 default:
                     throw new CommandNotRecognizedException("Wrong name of field to change");
@@ -150,21 +297,23 @@ public class TelegramBotAdmin {
             if (oldDate.isBefore(LocalDate.now())) {
                 throw new WrongDateException("You can't change lesson in the past");
             }
-            LocalDateTime newDateTime = LocalDateTime.parse(addInfo[2] , Constant.formatter);
+            LocalDateTime newDateTime = LocalDateTime.parse(addInfo[2], Constant.formatter);
             if (newDateTime.isBefore(LocalDateTime.now())) {
                 throw new WrongDateException("New date must be in future");
             }
             Lesson lesson = lessonService.findByStudentDate(oldDate, studentId);
             if (lesson.getStatus() == LessonStatus.NEW || lesson.getStatus() == LessonStatus.PLANNED) {
-                lesson.setDate(newDateTime);
+                lesson.setStartTime(newDateTime);
                 lesson.setStatus(LessonStatus.PLANNED);
-                lessonService.saveLesson(lesson);
+                lessonService.updateLesson(lesson);
             }
             HashMap<Long, String> answers = new HashMap<>();
             answers.put(Constant.adminChatId, "Перенесен урок с " + oldDate.format(Constant.formatterJustDate) +
                     " на " + newDateTime.format(Constant.formatterTimeFirst) + " у " + student.getName());
-            answers.put(student.getChatId(), "Date of lesson " + oldDate.format(Constant.formatterJustDate) +
-                    " was changed. New date and time " + newDateTime.format(Constant.formatterTimeFirst));
+            if (student.getMessenger() == Messenger.TELEGRAM) {
+                answers.put(student.getChatId(), "Date of lesson " + oldDate.format(Constant.formatterJustDate) +
+                        " was changed. New date and time " + newDateTime.format(Constant.formatterTimeFirst));
+            }
             return answers;
         } else {
             throw new CommandNotRecognizedException(Constant.CNR);
@@ -177,15 +326,23 @@ public class TelegramBotAdmin {
         if (addInfo == null) {
             answer = lessonService.findByStatus(LessonStatus.COMPLETED)
                     .stream()
+                    .sorted()
                     .map(LessonAdminDAO::new)
                     .map(LessonAdminDAO::toString)
                     .collect(Collectors.joining("\n"));
         } else if (addInfo.length == 1) {
-            answer = lessonService.findByStatusAndStudentName(LessonStatus.COMPLETED, addInfo[0])
+            List<Lesson> lessons=lessonService.findByStatusAndStudentName(LessonStatus.COMPLETED, addInfo[0]);
+            answer = lessons
                     .stream()
+                    .sorted()
                     .map(LessonAdminDAO::new)
                     .map(LessonAdminDAO::toString)
                     .collect(Collectors.joining("\n"));
+            int sumUnpaid=0;
+            for (Lesson lesson:lessons) {
+                sumUnpaid+=lesson.getCost();//todo change forPayment
+            }
+            answer = answer+"\ntotal: "+sumUnpaid;
         } else {
             answer = Constant.CNR;
         }
@@ -198,11 +355,13 @@ public class TelegramBotAdmin {
             LocalDate date = LocalDate.parse(addInfo[0], Constant.formatterJustDate);
             if (date.isBefore(LocalDate.now())) {
                 answer = lessonService.findInPeriod(date, LocalDate.now()).stream()
+                        .sorted()
                         .map(LessonAdminDAO::new)
                         .map(LessonAdminDAO::toString)
                         .collect(Collectors.joining("\n"));
             } else {
                 answer = lessonService.findInPeriod(LocalDate.now(), date).stream()
+                        .sorted()
                         .map(LessonAdminDAO::new)
                         .map(LessonAdminDAO::toString)
                         .collect(Collectors.joining("\n"));
@@ -212,6 +371,7 @@ public class TelegramBotAdmin {
             answer = lessonService.findInPeriod(LocalDate.parse(addInfo[0], Constant.formatterJustDate),
                             LocalDate.parse(addInfo[1], Constant.formatterJustDate))
                     .stream()
+                    .sorted()
                     .map(LessonAdminDAO::new)
                     .map(LessonAdminDAO::toString)
                     .collect(Collectors.joining("\n"));
@@ -222,63 +382,88 @@ public class TelegramBotAdmin {
     }
 
     public HashMap<Long, String> lessonCompleted(String[] addInfo) {
-        //adminChatId - answerAdmin
-        //studentChatId - answerStudent
-        //todo изменять баланс ученика при выполнении занятия
         HashMap<Long, String> answers = new HashMap<>();
-        if (addInfo != null && addInfo.length == 1) {//только дата
-            List<Lesson> lessons = lessonService.findByDate(LocalDate.parse((addInfo[0]), Constant.formatterJustDate));
-            StringBuilder answerAdmin = new StringBuilder("Lessons completed: \n");
-            for (Lesson lesson : lessons) {
-                if (lesson.getStatus() == LessonStatus.NEW || lesson.getStatus() == LessonStatus.PLANNED) {
-                    if (lesson.getStudent().getMessenger() == Messenger.TELEGRAM) {
-                        answers.put(lesson.getStudent().getChatId(), "Lesson " + lesson.getDate().format(Constant.formatterJustDate) + " COMPLETED ("+lesson.getId()+")");
+        if (addInfo != null && addInfo.length == 1) {//только дата или только номер урока
+            LocalDate date;
+            try {
+                date = LocalDate.parse(addInfo[0], Constant.formatterJustDate);
+                List<Lesson> lessons = lessonService.findByDate(date).stream()
+                        .sorted()
+                        .collect(Collectors.toList());
+                StringBuilder answerAdmin = new StringBuilder("Lessons completed: \n");
+                for (Lesson lesson : lessons) {
+                    if (lesson.getStatus() == LessonStatus.NEW || lesson.getStatus() == LessonStatus.PLANNED) {
+                        User student = lesson.getStudent();
+                        if (student.getMessenger() == Messenger.TELEGRAM) {
+                            answers.put(student.getChatId(), "Lesson " + lesson.getStartTime().format(Constant.formatterJustDate) + " COMPLETED (" + lesson.getId() + ")");
+                        }
+                        lesson.setCost();
+                        int balance = student.getBalance();
+                        int forPay = lesson.getForPayment();
+                        student.setBalance(balance - forPay);
+                        if (balance > 0 && balance < forPay) {
+                            lesson.setForPayment(forPay - balance);
+                            lesson.setStatus(LessonStatus.COMPLETED);
+                        } else if (balance >= forPay) {
+                            lesson.setForPayment(0);
+                            lesson.setStatus(LessonStatus.PAID);
+                        } else {
+                            lesson.setStatus(LessonStatus.COMPLETED);
+                        }
+                        userService.saveUser(student);
+                        lessonService.updateLessonInBase(lesson);
+
+                        answerAdmin.append("- ")
+                                .append(lesson.getStudent().getChatName())
+                                .append(" - ")
+                                .append(lesson.getStartTime().format(Constant.formatterJustDate))
+                                .append("- COMPLETED (")
+                                .append(lesson.getId())
+                                .append(")\n");
                     }
+                    if (lesson.getStatus() == LessonStatus.PAID || lesson.getStatus() == LessonStatus.CANCELED) {
+                        answerAdmin.append("!!! Status:")
+                                .append(lesson.getStatus().toString())
+                                .append(" - student:")
+                                .append(lesson.getStudent().getName())
+                                .append(" date: ")
+                                .append(lesson.getStartTime().format(Constant.formatterJustDate))
+                                .append("\n");
+                    }
+                }
+                answers.put(Constant.adminChatId, answerAdmin.toString());
+            } catch (DateTimeParseException e) {
+                Lesson lesson = lessonService.findById(Integer.parseInt(addInfo[0]));
+                lesson.setStatus(LessonStatus.COMPLETED);
+                lesson.setCost();
+
+                User student = lesson.getStudent();
+                int balance = student.getBalance();
+                int forPay = lesson.getForPayment();
+
+                student.setBalance(balance - forPay);
+
+                if (balance >= forPay) {
+                    lesson.setForPayment(0);
+                    lesson.setStatus(LessonStatus.PAID);
+                } else if (balance > 0) {
+                    lesson.setForPayment(forPay - balance);
                     lesson.setStatus(LessonStatus.COMPLETED);
-                    lesson.setCost();
-
-                    User student = lesson.getStudent();
-                    int balance =student.getBalance(); //todo check balance
-                    balance=balance-lesson.getCost();
-                    student.setBalance(balance);
-                    userService.saveUser(student);
-
-                    lessonService.saveLesson(lesson);
-                    answerAdmin.append("- ")
-                            .append(lesson.getStudent().getChatName())
-                            .append(" - ")
-                            .append(lesson.getDate().format(Constant.formatterJustDate))
-                            .append("- COMPLETED (")
-                            .append(lesson.getId())
-                            .append(")\n");
+                } else {
+                    lesson.setStatus(LessonStatus.COMPLETED);
                 }
-                if (lesson.getStatus() == LessonStatus.PAID || lesson.getStatus() == LessonStatus.CANCELED) {
-                    answerAdmin.append("!!! Status:")
-                            .append(lesson.getStatus().toString())
-                            .append(" - student:")
-                            .append(lesson.getStudent().getName())
-                            .append(" date: ")
-                            .append(lesson.getDate().format(Constant.formatterJustDate))
-                            .append("\n");
+                userService.saveUser(student);
+                lessonService.updateLessonInBase(lesson);
+
+                answers.put(Constant.adminChatId, "Lesson completed: \n -" + lesson.getStudent().getChatName() + " - " + lesson.getStartTime().format(Constant.formatterJustDate));
+                if (student.getMessenger() == Messenger.TELEGRAM) {
+                    answers.put(lesson.getStudent().getChatId(), "Lesson " + lesson.getStartTime().format(Constant.formatterJustDate) + " completed (" + lesson.getId() + ")");
                 }
+            } catch (RuntimeException e) {
+                answers.put(Constant.adminChatId, e.getMessage());
             }
-            answers.put(Constant.adminChatId, answerAdmin.toString());
-        } else if (addInfo != null && addInfo.length == 2) {//конкретный пользователь
-            Lesson lesson = lessonService.findByStudentDate(LocalDate.parse(addInfo[0], Constant.formatterJustDate), Integer.parseInt(addInfo[1]));
-            lesson.setStatus(LessonStatus.COMPLETED);
-            lesson.setCost();
-
-            User student = lesson.getStudent();
-            int balance =student.getBalance(); //todo check balance
-            balance=balance-lesson.getCost();
-            student.setBalance(balance);
-            userService.saveUser(student);
-
-            lessonService.saveLesson(lesson);
-            answers.put(Constant.adminChatId, "Lesson completed: \n -" + lesson.getStudent().getChatName() + " - " + lesson.getDate().format(Constant.formatterJustDate));
-            answers.put(lesson.getStudent().getChatId(), "Lesson " + lesson.getDate().format(Constant.formatterJustDate) + " completed ("+lesson.getId()+")");
         } else {
-            answers.put(Constant.adminChatId, Constant.CNR);
+            throw new CommandNotRecognizedException(Constant.CNR);
         }
         return answers;
     }
@@ -305,8 +490,9 @@ public class TelegramBotAdmin {
                 return "Wrong date!";
             }
             User student = userService.findById(Integer.parseInt(addInfo[0]));
-            Lesson newLesson = addLesson(student, dateTime);
-            return "New lesson added " + Constant.formatter.format(newLesson.getDate());
+            Lesson newLesson = new Lesson(student, dateTime, LessonStatus.PLANNED);
+            newLesson = lessonService.saveNewLesson(newLesson);
+            return "New lesson added " + Constant.formatter.format(newLesson.getStartTime());
         } else {
             log.info(Constant.CNR);
             return Constant.CNR;
@@ -323,17 +509,10 @@ public class TelegramBotAdmin {
         }
     }
 
-    private Lesson addLesson(User user, LocalDateTime dateTime) {
-        Lesson newLesson = new Lesson();
-        newLesson.setStudent(user);
-        newLesson.setDate(dateTime);
-        newLesson.setStatus(LessonStatus.PLANNED);
-        return lessonService.saveLesson(newLesson);
-    }
-
     public String schedule() {
         LocalDate now = LocalDate.now();
         return lessonService.findInPeriod(now, now.plusDays(10)).stream()
+                .sorted()
                 .map(LessonAdminDAO::new)
                 .map(LessonAdminDAO::toString)
                 .collect(Collectors.joining("\n"));

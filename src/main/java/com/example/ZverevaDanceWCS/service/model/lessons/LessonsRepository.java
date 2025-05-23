@@ -11,14 +11,16 @@ public interface LessonsRepository extends JpaRepository<Lesson, Long> {
     List<Lesson> findByStudentId(int id);
     Lesson findById(int id);
 
-    List<Lesson> findByDateBetween(LocalDateTime startDate, LocalDateTime endDate);
+    List<Lesson> findByStartTimeBetween(LocalDateTime startDate, LocalDateTime endDate);
 
-    List<Lesson> findByStudentIdAndDateBetween(int studentId, LocalDateTime startDate, LocalDateTime endDate);
+    List<Lesson> findByStudentIdAndStartTimeBetween(int studentId, LocalDateTime startDate, LocalDateTime endDate);
 
-    boolean existsByStudentIdAndDateBetween(int studentId, LocalDateTime startDate, LocalDateTime endDate);
+    boolean existsByStudentIdAndStartTimeBetween(int studentId, LocalDateTime startDate, LocalDateTime endDate);
 
     List<Lesson> findByStatus(LessonStatus status);
     List<Lesson> findByStatusAndStudentName(LessonStatus status, String name);
-    List<Lesson> findByStatusInAndDateBefore (List<LessonStatus> status, LocalDateTime date);
-    List<Lesson> findByStudentIdAndDateAfter(int studentId, LocalDateTime date);
+    List<Lesson> findByStatusInAndStartTimeBefore(List<LessonStatus> status, LocalDateTime date);
+    List<Lesson> findByStudentIdAndStartTimeAfter(int studentId, LocalDateTime date);
+    List<Lesson> findByStudentIdAndStatus(int studentId, LessonStatus status);
+    List<Lesson> findByStatusInAndStartTimeAfter(List<LessonStatus> statusList, LocalDateTime timeNow);
 }

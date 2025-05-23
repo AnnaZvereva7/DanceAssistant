@@ -1,17 +1,20 @@
 package com.example.ZverevaDanceWCS.service.telegramBot;
 
+import com.example.ZverevaDanceWCS.service.calendar.GoogleCalendarService;
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.exception.CommandNotRecognizedException;
-import com.example.ZverevaDanceWCS.service.model.exception.LessonNotFoundException;
+import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.exception.WrongDateException;
 import com.example.ZverevaDanceWCS.service.model.lessons.*;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,10 +24,12 @@ public class TelegramBotUser {
     @Autowired
     private final UserService userService;
     private final LessonService lessonService;
+    private final GoogleCalendarService calendarService;
 
-    public TelegramBotUser(UserService userService, LessonService lessonService) {
+    public TelegramBotUser(UserService userService, LessonService lessonService, GoogleCalendarService calendarService) {
         this.userService = userService;
         this.lessonService = lessonService;
+        this.calendarService = calendarService;
     }
 
 
@@ -43,7 +48,7 @@ public class TelegramBotUser {
 
     public String printMenuUser() {
         StringBuilder menu = new StringBuilder("You can use one of these commands: \n");
-        menu.append("to add new lesson -> \n /new_lesson:01.01.25 09:30\n");
+        menu.append("to add new lesson -> \n git\n");
         menu.append("to change lesson day or time ->\n /change_lesson:01.01.25 to 02.01.01 09:30\n");
         menu.append("to cancel one lesson -> \n /cancel_lesson:01.01.25\n");
         menu.append("to cancel all lessons -> \n /cancel_lesson\n");
@@ -95,6 +100,7 @@ public class TelegramBotUser {
         } else {
             return lessons.stream()
                     .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
+                    .sorted(Comparator.comparing(Lesson::getStartTime))
                     .map(LessonUserShortDAO::new)
                     .map(LessonUserShortDAO::toString)
                     .collect(Collectors.joining("\n"));
@@ -107,11 +113,7 @@ public class TelegramBotUser {
         if (addInfo == null) {
             List<Lesson> lessons = lessonService.findByStudentAndDateAfter(student.getId(), LocalDateTime.now());
             for (Lesson lesson : lessons) {
-                if (lesson.getStatus() == LessonStatus.NEW || lesson.getStatus() == LessonStatus.PLANNED) {
-                    lesson.setStatus(LessonStatus.CANCELED);
-                    lessonService.saveLesson(lesson);
-                }
-            }
+                lessonService.cancelLesson(lesson);            }
             //todo добавить инфо о том что больше не добавлять уроки в расписание?
             //todo  добавить расчет за месяц?
             answer = "All future lessons CANCELED";
@@ -121,18 +123,15 @@ public class TelegramBotUser {
                 throw new WrongDateException("You can't chancel lesson in the past");
             }
             Lesson lesson = lessonService.findByStudentDate(date, student.getId());
-            if (lesson.getStatus() != LessonStatus.NEW && lesson.getStatus() != LessonStatus.PLANNED) {
-                throw new LessonNotFoundException("You can't change lesson in status " + lesson.getStatus().toString());
-            }
-            lesson.setStatus(LessonStatus.CANCELED);
-            lesson = lessonService.saveLesson(lesson);
-            answer = "Lesson on " + lesson.getDate().format(Constant.formatterTimeFirst) + " was canceled";
+            lessonService.cancelLesson(lesson);
+            answer = "Lesson on " + lesson.getStartTime().format(Constant.formatterTimeFirst) + " was canceled";
         } else {
             throw new CommandNotRecognizedException(Constant.CNR);
         }
         return answer;
     }
 
+    @Transactional
     public String changeLesson(String[] addInfo, long chatId) throws RuntimeException { //WrongDate, UserNotFound, CommandNotRecognized, LessonNotFound
         String answer = "";
         if (addInfo != null && addInfo.length == 4) {
@@ -144,12 +143,12 @@ public class TelegramBotUser {
             User student = userService.findByChatId(chatId);
             Lesson lesson = lessonService.findByStudentDate(oldDate, student.getId());
             if (lesson.getStatus() != LessonStatus.NEW && lesson.getStatus() != LessonStatus.PLANNED) {
-                throw new LessonNotFoundException("You can't change lesson with status " + lesson.getStatus().toString());
+                throw new NotFoundException("You can't change lesson with status " + lesson.getStatus().toString());
             } else {
-                lesson.setDate(newDate);
+                lesson.setStartTime(newDate);
                 lesson.setStatus(LessonStatus.NEW);
-                lesson = lessonService.saveLesson(lesson);
-                answer = "Lesson changed, new time: " + lesson.getDate().format(Constant.formatterTimeFirst);
+                lesson = lessonService.updateLesson(lesson);
+                answer = "Lesson changed, new time: " + lesson.getStartTime().format(Constant.formatterTimeFirst);
             }
         } else {
             throw new CommandNotRecognizedException(Constant.CNR);
@@ -157,6 +156,7 @@ public class TelegramBotUser {
         return answer;
     }
 
+    @Transactional
     public String addLesson(String[] addInfo, long chatId) {
         String answer = "";
         if (addInfo != null && addInfo.length == 2) {
@@ -168,11 +168,8 @@ public class TelegramBotUser {
             if (lessonService.existByStudentDate(LocalDate.parse(addInfo[0], Constant.formatterJustDate), student.getId())) {
                 throw new WrongDateException("You already have lesson at this date");
             }
-            Lesson newLesson = new Lesson();
-            newLesson.setDate(dateTime);
-            newLesson.setStudent(student);
-            newLesson.setStatus(LessonStatus.NEW);
-            Lesson lesson = lessonService.saveLesson(newLesson);
+            Lesson newLesson = new Lesson(student, dateTime, LessonStatus.NEW);
+            Lesson lesson = lessonService.saveNewLesson(newLesson);
             answer = "New lesson " + dateTime.format(Constant.formatterTimeFirst) + " successfully added";
         } else {
             throw new CommandNotRecognizedException(Constant.CNR);

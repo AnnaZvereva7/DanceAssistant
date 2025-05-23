@@ -13,7 +13,7 @@ public class LessonUserShortDAO { //time date - status
     LessonStatus status;
 
     public LessonUserShortDAO(Lesson lesson) {
-        this.dateTime=lesson.getDate();
+        this.dateTime=lesson.getStartTime();
         this.status=lesson.getStatus();
     }
 

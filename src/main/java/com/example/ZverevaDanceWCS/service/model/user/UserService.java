@@ -1,6 +1,6 @@
 package com.example.ZverevaDanceWCS.service.model.user;
 
-import com.example.ZverevaDanceWCS.service.model.exception.UserNotFoundException;
+import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +46,7 @@ public class UserService {
         if(userRepository.findByChatId(chatId).isPresent()) {
             return userRepository.findByChatId(chatId).get();
         } else {
-            throw new UserNotFoundException("User with this chatId not found");
+            throw new NotFoundException("User with this chatId not found");
         }
     }
 
@@ -54,7 +54,7 @@ public class UserService {
         if(userRepository.findById(id).isPresent()) {
             return userRepository.findById(id).get();
         } else {
-            throw new UserNotFoundException("User with id="+id+" not found");
+            throw new NotFoundException("User with id="+id+" not found");
         }
     }
 
@@ -64,7 +64,10 @@ public class UserService {
         } else {
             return userRepository.findAllByRole(role);
         }
+    }
 
+    public List<User> usersWithSchedule() {
+        return userRepository.findByScheduleDayNotNull();
     }
 
 }

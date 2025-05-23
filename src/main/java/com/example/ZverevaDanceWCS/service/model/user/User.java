@@ -1,10 +1,15 @@
 package com.example.ZverevaDanceWCS.service.model.user;
 
+import com.example.ZverevaDanceWCS.service.Constant;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -45,6 +50,17 @@ public class User {
     @Enumerated (EnumType.STRING)
     Language language;
 
+    @Enumerated (EnumType.STRING)
+    @Column(name="schedule_day")
+    DayOfWeek scheduleDay;
+
+    @Column(name = "schedule_time")
+    LocalTime scheduleTime;
+
+//    String googleAccessToken;
+//    String googleRefreshToken;
+//    LocalDateTime token_expiry;
+
 
     public User() {}
 
@@ -54,6 +70,10 @@ public class User {
         this.role=userRole;
         this.messenger=Messenger.valueOf(messenger.toUpperCase());
         this.balance=0;
+    }
+
+    public String toStringSchedule () {
+        return this.getName()+" ("+this.getId()+") -schedule: "+this.scheduleDay+ " "+this.scheduleTime.format(Constant.timeFormatter);
     }
 
 }

@@ -14,7 +14,7 @@ public class LessonUserDAO { //time date - status - recap
     String recap;
 
     public LessonUserDAO (Lesson lesson) {
-        this.dateTime=lesson.getDate();
+        this.dateTime=lesson.getStartTime();
         this.status=lesson.getStatus();
         this.recap=lesson.getRecap();
     }

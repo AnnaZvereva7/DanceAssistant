@@ -16,7 +16,7 @@ public class LessonAdminDAO { //09.30 22.04.25 - Anna - status:PLANNED (lesson_i
 
     public LessonAdminDAO(Lesson lesson) {
         this.studentName = lesson.getStudent().getName();
-        this.dateTime = lesson.getDate();
+        this.dateTime = lesson.getStartTime();
         this.status = lesson.getStatus();
         this.id = lesson.getId();
     }

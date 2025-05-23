@@ -1,7 +1,7 @@
 package com.example.ZverevaDanceWCS.service.model.exception;
 
-public class LessonNotFoundException extends RuntimeException {
-    public LessonNotFoundException(String message) {
+public class NotFoundException extends RuntimeException {
+    public NotFoundException(String message) {
         super(message);
     }
 }

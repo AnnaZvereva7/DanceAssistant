@@ -11,23 +11,35 @@ CREATE TABLE IF NOT EXISTS users (
     birthday DATE,
     messenger VARCHAR(50) NOT NULL,
     balance INTEGER DEFAULT 0,
-    language VARCHAR(10) DEFAULT 'ENG'
+    language VARCHAR(10) DEFAULT 'ENG',
+    schedule_day VARCHAR(50),
+    schedule_time TIME
 );
---
+
 --INSERT INTO users (name, chat_name, email, role, birthday, chat_id, messenger) VALUES
 -- ('Anna', 'AnnaZverevaMorozova','anna7489lamia@gmail.com','ADMIN','1990-01-23', 152942083, 'TELEGRAM');
--- ('Anton', 'zmalchunz',null,'NEW',null, 290556570, 'TELEGRAM'),
--- ('Alicja', 'Alicja', null, 'PERMANENT', null, 0, 'WHATSAPP')
 
 CREATE TABLE IF NOT EXISTS lessons (
     lesson_id SERIAL PRIMARY KEY,
     student_id INT REFERENCES users(user_id) NOT NULL,
     date_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    duration_min INT,
     status VARCHAR(50) NOT NULL DEFAULT 'NEW',
     to_do VARCHAR(255),
-    cost INT DEFAULT 0
+    cost INT DEFAULT 0,
+    for_payment INT DEFAULT 0,
+    google_event_id VARCHAR UNIQUE,
+    title VARCHAR(255)
 );
 
---INSERT INTO lessons (student_id, date_time, status) VALUES
---(1, '2025-05-05 09:30', 'NEW'),
---(1, '2025-05-02 10:30', 'COMPLETED');
+--end_time, duration_min, google_id todo change base
+
+CREATE TABLE IF NOT EXISTS payments (
+   payment_id SERIAL PRIMARY KEY,
+   student_id INT REFERENCES users(user_id) NOT NULL,
+   date_of_payment TIMESTAMP NOT NULL,
+   amount INT NOT NULL
+);
+
+
