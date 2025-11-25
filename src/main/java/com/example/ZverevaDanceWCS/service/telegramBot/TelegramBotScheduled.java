@@ -3,6 +3,7 @@ package com.example.ZverevaDanceWCS.service.telegramBot;
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
+import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.user.Messenger;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
@@ -37,6 +38,7 @@ public class TelegramBotScheduled {
     public void reminder() {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         List<Lesson> lessons = lessonService.findByDate(tomorrow);
+        lessons=lessons.stream().filter(lesson -> lesson.getStatus()!=LessonStatus.CANCELED).collect(Collectors.toList());
         for (Lesson lesson : lessons) {
             User student = lesson.getStudent();
             if (student.getMessenger() == Messenger.TELEGRAM) {
@@ -51,12 +53,13 @@ public class TelegramBotScheduled {
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         List<Lesson> lessons = lessonService.findByDate(tomorrow)
                 .stream()
+                .filter(lesson -> lesson.getStatus()!= LessonStatus.CANCELED)
                 .sorted(Comparator.comparing(Lesson::getStartTime))
                 .collect(Collectors.toList());
         if (!lessons.isEmpty()) {
             String answer = "Tomorrow lessons:\n";
             for (Lesson lesson : lessons) {
-                answer = answer + lesson.getStartTime().format(Constant.formatterTimeFirst) + " - " + lesson.getStudent().getName() + " (id=" + lesson.getStudent().getId() + ")\n";
+                answer = answer + lesson.getStartTime().format(Constant.formatterTimeFirst) + " - " + lesson.getStudent().getName() + " (lessonId=" + lesson.getId() + ")\n";
             }
             bot.sendMessage(Constant.adminChatId, answer);
             log.info("уведомление администратору о расписании на следующий день");
@@ -81,20 +84,22 @@ public class TelegramBotScheduled {
 
     }
 
-    @Scheduled(cron = "0 0 12 ? * SAT")
-    public void addScheduledLessons() {
-        List<User> students = userService.usersWithSchedule();
-        String response = "Scheduled lessons: \n";
-        for (User student : students) {
-            try {
-                Lesson lesson = lessonService.addLessonBySchedule(student);
-                bot.sendMessage(student.getChatId(), "Scheduled lesson added:" + lesson.getStartTime().format(Constant.formatterTimeFirst));
-                response = response + student.getName() + " - " + lesson.getStartTime().format(Constant.formatterTimeFirst) + " (" + lesson.getId() + ")\n";
-            } catch (RuntimeException e) {
-                bot.sendMessage(Constant.adminChatId, e.getMessage());
-            }
-        }
-        bot.sendMessage(Constant.adminChatId, response);
-    }
+//    @Scheduled(cron = "0 0 10 ? * SUN")
+//    public void addScheduledLessons() {
+//        List<User> students = userService.usersWithSchedule();
+//        String response = "Scheduled lessons: \n";
+//        for (User student : students) {
+//            try {
+//                Lesson lesson = lessonService.addLessonBySchedule(student);
+//                if(student.getMessenger()==Messenger.TELEGRAM) {
+//                    bot.sendMessage(student.getChatId(), "Scheduled lesson added:" + lesson.getStartTime().format(Constant.formatterTimeFirst));
+//                }
+//                response = response + student.getName() + " - " + lesson.getStartTime().format(Constant.formatterTimeFirst) + " (" + lesson.getId() + ")\n";
+//            } catch (RuntimeException e) {
+//                bot.sendMessage(Constant.adminChatId, e.getMessage());
+//            }
+//        }
+//        bot.sendMessage(Constant.adminChatId, response);
+//    }
 
 }

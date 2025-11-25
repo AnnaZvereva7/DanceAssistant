@@ -7,10 +7,16 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @SpringBootApplication
 
-public class ZverevaDanceWcsApplication {
+public class   ZverevaDanceWcsApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(ZverevaDanceWcsApplication.class, args);
 	}
 
 }
+
+//todo изменить расчет оплаты если урок несколько часов
+
+//todo номер wsdc учеников
+//todo список ивентов с датами и прикрепить к ученикам, ссылки на мероприятия, результаты учеников, напоминания о мероприятиях за неделю со списком учеников
+//todo история по каждому ученику (рекапы, планы, ивенты, номер wsdc, результаты)

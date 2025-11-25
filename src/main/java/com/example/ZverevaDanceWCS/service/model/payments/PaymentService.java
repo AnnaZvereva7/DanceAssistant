@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Service
@@ -46,4 +47,15 @@ public class PaymentService {
         return paymentRepository.findByStudentId(studentId);
     }
 
+    public List<Payment> findByYear (int year) {
+        LocalDate startDate = LocalDate.of(year, 1,1);
+        LocalDate endDate= LocalDate.of(year, 12,31);
+        return paymentRepository.findByDateBetween(startDate, endDate);
+    }
+
+    public List<Payment> findByMonthAndYear(int month, int year) {
+        LocalDate startDate = LocalDate.of(year, month,1);
+        LocalDate endDate= startDate.with(TemporalAdjusters.lastDayOfMonth());
+        return paymentRepository.findByDateBetween(startDate, endDate);
+    }
 }

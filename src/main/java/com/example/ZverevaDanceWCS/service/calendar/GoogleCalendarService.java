@@ -108,8 +108,9 @@ public class GoogleCalendarService {
 
     public void deleteEvent (String eventId) {
         try {
+            initGoogleCalendar();
             calendar.events().delete(teacherCalendarId, eventId).execute();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException("Ошибка при удалении в календаре");
         }
     }

@@ -1,6 +1,8 @@
-package com.example.ZverevaDanceWCS.service.model.lessons;
+package com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO;
 
 import com.example.ZverevaDanceWCS.service.Constant;
+import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
+import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import lombok.AllArgsConstructor;
 import lombok.Setter;
 

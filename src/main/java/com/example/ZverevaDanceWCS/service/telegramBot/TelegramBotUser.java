@@ -6,6 +6,8 @@ import com.example.ZverevaDanceWCS.service.model.exception.CommandNotRecognizedE
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.exception.WrongDateException;
 import com.example.ZverevaDanceWCS.service.model.lessons.*;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserShortDAO;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;

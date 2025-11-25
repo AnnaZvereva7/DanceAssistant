@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     chat_name VARCHAR(100),
     chat_id BIGINT UNIQUE,
     email VARCHAR(100) UNIQUE,
-    role VARCHAR(50) NOT NULL DEFAULT 'NEW_USER',
+    role VARCHAR(50) NOT NULL DEFAULT 'NEW',
     plans VARCHAR(255),
     birthday DATE,
     messenger VARCHAR(50) NOT NULL,
@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS lessons (
     end_time TIMESTAMP NOT NULL,
     duration_min INT,
     status VARCHAR(50) NOT NULL DEFAULT 'NEW',
+--    recap/to_do убрать потом
     to_do VARCHAR(255),
     cost INT DEFAULT 0,
     for_payment INT DEFAULT 0,
@@ -42,4 +43,16 @@ CREATE TABLE IF NOT EXISTS payments (
    amount INT NOT NULL
 );
 
+CREATE TABLE if NOT EXISTS student_info (
+info_id SERIAL PRIMARY KEY,
+student_id INT NOT NULL,
+info_date DATE NOT NULL,
+status VARCHAR(50) NOT NULL DEFAULT 'ACTUAL',
+info TEXT NOT NULL
+);
 
+CREATE TABLE IF NOT EXISTS free_slots (
+   slot_id SERIAL PRIMARY KEY,
+   start_date_time TIMESTAMP NOT NULL,
+   end_date_time TIMESTAMP NOT NULL
+);

@@ -9,6 +9,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Comparator;
 
 @Entity
 @Table(name = "users")
@@ -76,4 +77,13 @@ public class User {
         return this.getName()+" ("+this.getId()+") -schedule: "+this.scheduleDay+ " "+this.scheduleTime.format(Constant.timeFormatter);
     }
 
+    public static Comparator<User> compareById() {
+        return Comparator.comparing(User::getId);
+    }
+
+    public static Comparator<User> compareBySchedule() {
+        return Comparator
+                .comparing(User::getScheduleDay)
+                .thenComparing(User::getScheduleTime);
+    }
 }

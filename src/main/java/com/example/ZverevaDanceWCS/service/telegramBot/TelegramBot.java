@@ -66,8 +66,30 @@ public class TelegramBot extends TelegramLongPollingBot {
             case "/schedule": //расписание на 7 дней от текущей даты(начало дня)
                 sendMessage(chatId, botAdmin.schedule());
                 break;
+            case "/planned_lessons":
+                sendMessage(chatId, botAdmin.plannedLessons());
+                break;
+            case "/scheduled_students":
+                sendMessage(chatId, botAdmin.scheduledStudents());
+                break;
+            case "/add_by_schedule":
+                try {
+                    HashMap<Long, String> answers = botAdmin.addBySchedule();
+                    for (Map.Entry<Long, String> entry : answers.entrySet()) {
+                        sendMessage(entry.getKey(), entry.getValue());
+                    }
+                } catch (RuntimeException e) {
+                    sendMessage(Constant.adminChatId, e.getMessage());
+                }
+                break;
             case "/student_list":
                 sendMessage(chatId, botAdmin.studentList(addInfo));
+                break;
+            case "/month_payments":
+                sendMessage(chatId, botAdmin.monthPayment(addInfo));
+                break;
+            case "/year_payments":
+                sendMessage(chatId, botAdmin.yearPayments(addInfo));
                 break;
             case "/new_lesson": //id 01.01.25 09:30 - добавить урок по id ученика, сразу статус  PLANNED, уведомление только админу
                 sendMessage(chatId, botAdmin.newLesson(addInfo));
@@ -142,12 +164,27 @@ public class TelegramBot extends TelegramLongPollingBot {
                     sendMessage(Constant.adminChatId, "Платеж не внесен. "+e.getMessage());
                 }
                 break;
-            case "/add_schedule"://add_schedule:id-dayOfWeek-time
+            case "/change_schedule"://change_schedule:id-[dayOfWeek-time]
                 try {
-                    sendMessage(Constant.adminChatId, botAdmin.addSchedule(addInfo));
+                    HashMap<Long, String > response=botAdmin.changeSchedule(addInfo);
+                    for(Map.Entry<Long,String> entry: response.entrySet()) {
+                        sendMessage(entry.getKey(), entry.getValue());
+                    }
                 } catch (RuntimeException e) {
                     sendMessage(Constant.adminChatId, e.getMessage());
                 }
+                break;
+            case "/add_info":
+                sendMessage(chatId, botAdmin.addInfo(addInfo));
+                break;
+//            case "/from_recap_to_info":
+//                sendMessage(chatId, botAdmin.fromRecapToInfo());
+//                break;
+            case "/show_info": //"show_info:studentId
+                sendMessage(chatId, botAdmin.showInfo(addInfo));
+                break;
+            case "/info_old":
+                sendMessage(chatId, botAdmin.infoChangeStatus(addInfo));
                 break;
             case "/cancel_lesson": //cancel_lesson:lessonId
                 try {
@@ -170,6 +207,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                         sendMessage(entry.getKey(), entry.getValue());
                     }
                 } catch (RuntimeException e ) {
+                    sendMessage(Constant.adminChatId, e.getMessage());
+                }
+                break;
+            case "/change_duration":
+                try{
+                    sendMessage(Constant.adminChatId, botAdmin.changeDuration(addInfo));
+                } catch (RuntimeException e){
                     sendMessage(Constant.adminChatId, e.getMessage());
                 }
                 break;
