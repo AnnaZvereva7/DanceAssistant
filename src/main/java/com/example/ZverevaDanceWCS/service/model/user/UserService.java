@@ -26,6 +26,14 @@ public class UserService {
         this.infoService = infoService;
     }
 
+    public User newUser(String name) {
+        User newUser = new User();
+        newUser.setName(name);
+        newUser.setRole(UserRole.NEW);
+        newUser.setBalance(0);
+        return userRepository.save(newUser);
+    }
+
     public User newUserTelegram(long chatId, String name, String chatName) {
         User newUser = new User();
         if (name != null) {
