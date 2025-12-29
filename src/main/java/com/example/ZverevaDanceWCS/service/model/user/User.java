@@ -65,11 +65,11 @@ public class User {
 
     public User() {}
 
-    public User(String name, String chatName, String messenger, UserRole userRole) {
+    public User(String name, String chatName, Messenger messenger, UserRole userRole) {
         this.name=name;
         this.chatName =chatName;
         this.role=userRole;
-        this.messenger=Messenger.valueOf(messenger.toUpperCase());
+        this.messenger=messenger;
         this.balance=0;
     }
 

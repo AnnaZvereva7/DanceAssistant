@@ -368,7 +368,7 @@
             const lessons = await response.json();
             list.innerHTML = "";
             if (lessons.length === 0) {
-                list.innerHTML = "<li>No lessons found</li>";
+                list.innerHTML = "<li>No completed lessons found</li>";
                 return;
             }
             lessons.forEach(lesson => {
@@ -404,7 +404,7 @@
             const lessons = await response.json();
             list.innerHTML = "";
             if (lessons.length === 0) {
-                list.innerHTML = "<li>No lessons found</li>";
+                list.innerHTML = "<li>No planned or new lessons found</li>";
                 return;
             }
             lessons.forEach(lesson => {

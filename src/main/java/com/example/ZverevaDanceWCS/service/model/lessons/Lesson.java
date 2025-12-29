@@ -81,11 +81,11 @@ public class Lesson implements Comparable<Lesson> {
     public void setCostAndForPayment() {
         if(this.getCost()==0) {
             if (this.student.getRole() == UserRole.PERMANENT) {
-                this.cost = Constant.permanentStudentCost;
-                this.forPayment = this.cost*durationMin/60;
+                this.cost = Constant.permanentStudentCost*durationMin/60;
+                this.forPayment = this.cost;
             } else {
-                this.cost = Constant.newStudentCost;
-                this.forPayment = this.cost*durationMin/60;
+                this.cost = Constant.newStudentCost*durationMin/60;
+                this.forPayment = this.cost;
             }
         } else {
             this.forPayment=this.cost;

@@ -136,16 +136,16 @@ public class TelegramBotAdmin {
     //show_info:studentId
     //show_info (for every actual info)
     public String showInfo(String[] addInfo) {
-        if(addInfo!=null && addInfo.length==1) {
-            User student  = userService.findById(Integer.parseInt(addInfo[0]));
-            return student.getName()+ " info:\n"
-                    +infoService.findByStudentActual(Integer.parseInt(addInfo[0]));
-        } else if (addInfo==null){
-            Map<Integer,String> infoMap = infoService.findAllByStatus(InfoStatus.ACTUAL);
+        if (addInfo != null && addInfo.length == 1) {
+            User student = userService.findById(Integer.parseInt(addInfo[0]));
+            return student.getName() + " info:\n"
+                    + infoService.findByStudentActual(Integer.parseInt(addInfo[0]));
+        } else if (addInfo == null) {
+            Map<Integer, String> infoMap = infoService.findAllByStatus(InfoStatus.ACTUAL);
             String response = "";
-            for(Map.Entry<Integer, String> entry: infoMap.entrySet()) {
+            for (Map.Entry<Integer, String> entry : infoMap.entrySet()) {
                 User student = userService.findById(entry.getKey());
-                response= response + "\n\n" +student.getName() + " info:\n" + entry.getValue();
+                response = response + "\n\n" + student.getName() + " info:\n" + entry.getValue();
             }
             return response;
         } else {
@@ -154,8 +154,8 @@ public class TelegramBotAdmin {
     }
 
     //info_old:infoId
-    public String infoChangeStatus (String[] addInfo) {
-        if (addInfo!=null && addInfo.length==1) {
+    public String infoChangeStatus(String[] addInfo) {
+        if (addInfo != null && addInfo.length == 1) {
             StudentInfo info = infoService.findById(Integer.parseInt(addInfo[0]));
             info.setStatus(InfoStatus.OLD);
             infoService.save(info);
@@ -167,7 +167,7 @@ public class TelegramBotAdmin {
 
     //to transfer recap to info
     public String fromRecapToInfo() {
-        int amount=0;
+        int amount = 0;
         List<Lesson> lessons = lessonService.findByRecapIsNotNull();
         for (Lesson lesson : lessons) {
             StudentInfo info = new StudentInfo();
@@ -176,9 +176,9 @@ public class TelegramBotAdmin {
             info.setInfo(lesson.getRecap());
             info.setDate(lesson.getStartTime().toLocalDate());
             infoService.save(info);
-            amount+=1;
+            amount += 1;
         }
-        return "Added "+amount+" new infos";
+        return "Added " + amount + " new infos";
     }
 
     //change_schedule:id-[day-09:30]
@@ -299,8 +299,16 @@ public class TelegramBotAdmin {
             String answer = "";
             Lesson lesson = lessonService.findById(Integer.parseInt(addInfo[0]));
             if (lesson.getStatus() == LessonStatus.COMPLETED) {
+                int durationOld = lesson.getDurationMin();
                 lesson.changeDuration(Integer.parseInt(addInfo[1]));
-                lesson.setForPayment(lesson.getCost());
+                int costOld = lesson.getCost();
+                lesson.setCost(costOld* lesson.getDurationMin()/durationOld);
+                int forPaymentOld = lesson.getForPayment();
+                if(costOld-forPaymentOld>0) {
+                    lesson.setForPayment(lesson.getCost()-(costOld - forPaymentOld));
+                } else {
+                    lesson.setForPayment(lesson.getCost());
+                }
                 lessonService.updateLessonInBase(lesson);
             } else if (lesson.getStatus() == LessonStatus.NEW || lesson.getStatus() == LessonStatus.PLANNED) {
                 lesson.changeDuration(Integer.parseInt(addInfo[1]));
@@ -322,7 +330,7 @@ public class TelegramBotAdmin {
             List<Lesson> lessons = lessonService.findByStudentIdAndStatus(student.getId(), LessonStatus.COMPLETED).stream()
                     .sorted()
                     .collect(Collectors.toList());
-            String answer= lessonService.lessonsToBill(lessons);
+            String answer = lessonService.lessonsToBill(lessons);
             if (student.getMessenger() == Messenger.TELEGRAM) {
                 response.put(student.getChatId(), answer);
             }
@@ -481,11 +489,6 @@ public class TelegramBotAdmin {
                     student.setName(addInfo[2]);
                     student = userService.saveUser(student);
                     return "New name for " + student.getChatName() + ": " + student.getName();
-                case "plans":
-                    //todo check email
-                    student.setPlans(addInfo[2]);
-                    student = userService.saveUser(student);
-                    return "New plans for " + student.getName();
                 case "birthday":
                     //todo изменить день рождения
                     return "";
@@ -546,7 +549,7 @@ public class TelegramBotAdmin {
                     .collect(Collectors.joining("\n"));
             int sumUnpaid = 0;
             for (Lesson lesson : lessons) {
-                sumUnpaid += lesson.getCost();//todo change forPayment
+                sumUnpaid += lesson.getForPayment();//todo change forPayment
             }
             answer = answer + "\ntotal: " + sumUnpaid;
         } else {
@@ -603,7 +606,7 @@ public class TelegramBotAdmin {
                         if (student.getMessenger() == Messenger.TELEGRAM) {
                             answers.put(student.getChatId(), "Lesson " + lesson.getStartTime().format(Constant.formatterJustDate) + " COMPLETED (" + lesson.getId() + ")");
                         }
-lessonService.lessonCompleted(lesson);
+                        lessonService.lessonCompleted(lesson);
 
                         answerAdmin.append("- ")
                                 .append(lesson.getStudent().getChatName())
@@ -630,7 +633,7 @@ lessonService.lessonCompleted(lesson);
                         && lesson.getStatus() != LessonStatus.CANCELED
                         && lesson.getStatus() != LessonStatus.PAID) {
 
-                   lessonService.lessonCompleted(lesson);
+                    lessonService.lessonCompleted(lesson);
 
                     answers.put(Constant.adminChatId, "Lesson completed: \n -" + lesson.getStudent().getChatName() + " - " + lesson.getStartTime().format(Constant.formatterJustDate));
                     if (lesson.getStudent().getMessenger() == Messenger.TELEGRAM) {
@@ -681,7 +684,7 @@ lessonService.lessonCompleted(lesson);
 
     public String newStudent(String[] addInfo) {
         if (addInfo != null && addInfo.length == 4) {
-            User newUser = new User(addInfo[0], addInfo[1], addInfo[2], UserRole.valueOf(addInfo[3].toUpperCase()));
+            User newUser = new User(addInfo[0], addInfo[1], Messenger.valueOf(addInfo[2].toUpperCase()), UserRole.valueOf(addInfo[3].toUpperCase()));
             User returnedUser = userService.saveUser(newUser);
             return "New user added: id=" + returnedUser.getId() + " name=" + returnedUser.getName() + " chatName=" + returnedUser.getChatName() + ".";
         } else {

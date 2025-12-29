@@ -56,7 +56,6 @@ public class TelegramBotUser {
         menu.append("to cancel all lessons -> \n /cancel_lesson\n");
         menu.append("to see the list of all lessons in period -> \n " +
                 "/lessons_in_period:01.01.25 [31.05.25]\n");
-        //menu.append() //todo last_lessons:3
         //menu.append("to see list of unpaid lessons ->\n /unpaid\n"); //todo
         return menu.toString();
     }

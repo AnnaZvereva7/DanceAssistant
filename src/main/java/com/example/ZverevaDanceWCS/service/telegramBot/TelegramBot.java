@@ -196,10 +196,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                     sendMessage(Constant.adminChatId, e.getMessage());
                 }
                 break;
-            case "/existed_to_google":
-                botAdmin.existedToGoogle();
-                sendMessage(Constant.adminChatId, "All lessons added");
-                break;
+//            case "/existed_to_google":
+//                botAdmin.existedToGoogle();
+//                sendMessage(Constant.adminChatId, "All lessons added");
+//                break;
             case "/send_bill": //send_bill:studentId
                 try{
                     HashMap<Long, String> response = botAdmin.sendBill(addInfo);
@@ -267,16 +267,16 @@ public class TelegramBot extends TelegramLongPollingBot {
                     sendMessage(chatId, e.getMessage());
                 }
                 break;
-            case "lesson_in_period": //lessons_in_period:01.01.25 [31.05.25]
-                try {
-                    answer=botUser.lessonsInPeriod(addInfo, chatId);
-                    sendMessage(chatId, answer);
-                } catch (ExceptionForAdmin e) {
-                    sendMessage(Constant.adminChatId, e.getMessage());
-                } catch (RuntimeException e) {
-                    sendMessage(chatId, e.getMessage());
-                }
-                break;
+//            case "lesson_in_period": //lessons_in_period:01.01.25 [31.05.25]
+//                try {
+//                    answer=botUser.lessonsInPeriod(addInfo, chatId);
+//                    sendMessage(chatId, answer);
+//                } catch (ExceptionForAdmin e) {
+//                    sendMessage(Constant.adminChatId, e.getMessage());
+//                } catch (RuntimeException e) {
+//                    sendMessage(chatId, e.getMessage());
+//                }
+//                break; todo удалить этот блок и из меню ученика тоже
             default:
                 sendMessage(chatId, Constant.CNR);
         }
