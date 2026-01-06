@@ -13,7 +13,9 @@ import com.example.ZverevaDanceWCS.service.model.user.*;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserFullDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateDto;
-import com.example.ZverevaDanceWCS.service.telegramBot.TelegramBot;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramStudentBot;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramTrainerBot;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramTrainerService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,16 +31,20 @@ import java.util.stream.Collectors;
 public class UserController {
     final UserService userService;
     final LessonService lessonService;
-    final TelegramBot bot;
     final PaymentService paymentService;
     final InfoService infoService;
+    final TelegramTrainerBot trainerBot;
+    final TelegramStudentBot studentBot;
 
-    public UserController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService) {
+
+    public UserController(UserService userService, UserRepository userRepository, LessonService lessonService, PaymentService paymentService,
+                          InfoService infoService, TelegramTrainerBot trainerBot, TelegramStudentBot studentBot) {
         this.userService = userService;
         this.lessonService = lessonService;
-        this.bot = bot;
         this.paymentService = paymentService;
         this.infoService = infoService;
+        this.trainerBot = trainerBot;
+        this.studentBot = studentBot;
     }
 
     @GetMapping("/user/{id}")
@@ -57,12 +63,12 @@ public class UserController {
             String response = lessonService.lessonsToBill(lessons);
             User student = userService.findById(id);
             if (student.getMessenger() == Messenger.TELEGRAM) {
-                bot.sendMessage(student.getChatId(), response);
+               studentBot.send(student.getChatId(), response);
             }
-            bot.sendMessage(Constant.adminChatId, "Bill sent to " + student.getName() + ":\n" + response);
+           trainerBot.send(Constant.adminChatId, "Bill sent to " + student.getName() + ":\n" + response);
             return true;
         } catch (RuntimeException e) {
-            bot.sendMessage(Constant.adminChatId, "Failed to send bill to user id " + id + ": " + e.getMessage());
+            trainerBot.send(Constant.adminChatId, "Failed to send bill to user id " + id + ": " + e.getMessage());
             return false;
         }
 
@@ -90,7 +96,7 @@ public class UserController {
     @Transactional
     public PaymentDTO paymentReceived(@PathVariable int id, @PathVariable int sum) {
         User student = userService.findById(id);
-        paymentService.saveNew(student, sum, java.time.LocalDate.now());
+        paymentService.saveNew(student, sum, java.time.LocalDate.now()); //todo add actual date from payment
         int balance = student.getBalance();
         balance += sum;
         student.setBalance(balance);
@@ -102,6 +108,11 @@ public class UserController {
     @PostMapping ("/user/new_info")
     public StudentInfo addNewInfo(@Valid @RequestBody NewInfoDTO newInfo) {
         log.info("Adding new info for student id="+newInfo.getStudentId());
+        StudentInfo studentInfo = infoService.saveFromNewInfoDTO(newInfo);
+        User student = userService.findById(studentInfo.getStudentId());
+        if(student.getMessenger()==Messenger.TELEGRAM) {
+            studentBot.send(student.getChatId(), "New information added:\n"+studentInfo.toString());
+        }
         return infoService.saveFromNewInfoDTO(newInfo);
     }
 

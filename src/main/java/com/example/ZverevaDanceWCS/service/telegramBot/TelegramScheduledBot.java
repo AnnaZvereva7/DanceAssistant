@@ -9,6 +9,7 @@ import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -19,17 +20,17 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class TelegramBotScheduled {
+public class TelegramScheduledBot {
 
-    private final TelegramBot bot;
+    final TelegramTrainerBot trainerBot;
+    final TelegramStudentBot studentBot;
 
-    @Autowired
     final UserService userService;
-    @Autowired
     final LessonService lessonService;
 
-    public TelegramBotScheduled(TelegramBot telegramBot, UserService userService, LessonService lessonService) {
-        this.bot = telegramBot;
+    public TelegramScheduledBot(TelegramTrainerBot trainerBot, TelegramStudentBot studentBot, UserService userService, LessonService lessonService) {
+        this.trainerBot = trainerBot;
+        this.studentBot = studentBot;
         this.userService = userService;
         this.lessonService = lessonService;
     }
@@ -42,7 +43,7 @@ public class TelegramBotScheduled {
         for (Lesson lesson : lessons) {
             User student = lesson.getStudent();
             if (student.getMessenger() == Messenger.TELEGRAM) {
-                bot.sendMessage(student.getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.timeFormatter));
+                studentBot.send(student.getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.timeFormatter));
                 log.info("Отправлено уведомление о занятии " + student.getName());
             }
         }
@@ -61,7 +62,7 @@ public class TelegramBotScheduled {
             for (Lesson lesson : lessons) {
                 answer = answer + lesson.getStartTime().format(Constant.formatterTimeFirst) + " - " + lesson.getStudent().getName() + " (lessonId=" + lesson.getId() + ")\n";
             }
-            bot.sendMessage(Constant.adminChatId, answer);
+            trainerBot.send(Constant.adminChatId, answer); //todo вместо админа - тренер, к занятию должен быть привязан ученик и тренер
             log.info("уведомление администратору о расписании на следующий день");
         } else {
             log.info("без уведомления администратору, занятий на следующий день нет");
@@ -76,30 +77,12 @@ public class TelegramBotScheduled {
             for (Lesson lesson : lessons) {
                 answer = answer + lesson.getStartTime().format(Constant.formatterJustDate) + " " + lesson.getStudent().getName() + " " + lesson.getStatus() + " (lessonId=" + lesson.getId() + ")\n";
             }
-            bot.sendMessage(Constant.adminChatId, answer);
+            trainerBot.send(Constant.adminChatId, answer); //todo вместо админа - тренер, к занятию должен быть привязан ученик и тренер
             log.info("Отправлено уведомление о прошедших занятиях");
         } else {
             log.info("Нет незавершенных прошедших занятий");
         }
 
     }
-
-//    @Scheduled(cron = "0 0 10 ? * SUN")
-//    public void addScheduledLessons() {
-//        List<User> students = userService.usersWithSchedule();
-//        String response = "Scheduled lessons: \n";
-//        for (User student : students) {
-//            try {
-//                Lesson lesson = lessonService.addLessonBySchedule(student);
-//                if(student.getMessenger()==Messenger.TELEGRAM) {
-//                    bot.sendMessage(student.getChatId(), "Scheduled lesson added:" + lesson.getStartTime().format(Constant.formatterTimeFirst));
-//                }
-//                response = response + student.getName() + " - " + lesson.getStartTime().format(Constant.formatterTimeFirst) + " (" + lesson.getId() + ")\n";
-//            } catch (RuntimeException e) {
-//                bot.sendMessage(Constant.adminChatId, e.getMessage());
-//            }
-//        }
-//        bot.sendMessage(Constant.adminChatId, response);
-//    }
 
 }
