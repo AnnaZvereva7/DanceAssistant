@@ -54,12 +54,12 @@ public class LessonController {
         Lesson lesson = lessonService.lessonCompleted(lessonService.findById(id));
         if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
             studentBot.send(lesson.getStudent().getChatId(),
-                    "Lesson on " + lesson.getStartTime().format(Constant.timeFormatter) + " marked as completed. Thank you!");
+                    "Lesson on " + lesson.getStartTime().format(Constant.formatter) + " marked as completed. Thank you!");
         }
         return LessonFullDTO.toFullDTO(lesson);
     }
 
-    @PostMapping("lesson/new")
+    @PostMapping("lesson/new")//todo correct duration, can't set 180 min for new lesson
     public LessonFullDTO createNewLesson(@Valid @RequestBody LessonNewDTO lessonNewDTO) {
         log.info("Creating new lesson for student id="+lessonNewDTO.getStudentId()+" at "+lessonNewDTO.getStartTime());
         User student = userService.findById(lessonNewDTO.getStudentId());
@@ -69,7 +69,7 @@ public class LessonController {
         log.info("New lesson created with id="+savedLesson.getId());
         if(student.getMessenger()==Messenger.TELEGRAM) {
             studentBot.send(student.getChatId(),
-                    "New lesson scheduled on " + savedLesson.getStartTime().format(Constant.timeFormatter) +
+                    "New lesson scheduled on " + savedLesson.getStartTime().format(Constant.formatter) +
                             " for " + savedLesson.getDurationMin() + " minutes. See you!");
         }
         return LessonFullDTO.toFullDTO(savedLesson);
@@ -80,7 +80,7 @@ public class LessonController {
         Lesson lesson=lessonService.cancelLesson(lessonService.findById(id));
         if(lesson.getStudent().getMessenger()==Messenger.TELEGRAM) {
             studentBot.send(lesson.getStudent().getChatId(),
-                    "Lesson on " + lesson.getStartTime().format(Constant.timeFormatter) + " has been canceled.");
+                    "Lesson on " + lesson.getStartTime().format(Constant.formatter) + " has been canceled.");
         }
         return LessonFullDTO.toFullDTO(lesson);
     }
@@ -91,12 +91,13 @@ public class LessonController {
         Lesson updatedLesson = lessonToUpdate;
         updatedLesson.setStartTime(lessonUpdateDto.getStartTime());
         updatedLesson.setDurationMin(lessonUpdateDto.getDurationInMinutes());
+        updatedLesson.setEndTime(updatedLesson.getStartTime().plusMinutes(updatedLesson.getDurationMin()));
         updatedLesson.setCost(lessonUpdateDto.getCost());
         updatedLesson = lessonService.updateLesson(updatedLesson);
         if(updatedLesson.getStudent().getMessenger()==Messenger.TELEGRAM) {
             studentBot.send(updatedLesson.getStudent().getChatId(),
-                    "Lesson on " + lessonToUpdate.getStartTime().format(Constant.timeFormatter) +
-                            " were changed. New time " +updatedLesson.getStartTime().format(Constant.timeFormatter)
+                    "Lesson on " + lessonToUpdate.getStartTime().format(Constant.formatter) +
+                            " were changed. New time " +updatedLesson.getStartTime().format(Constant.formatter)
                             +" for " + updatedLesson.getDurationMin() + " minutes.");
         }
         return LessonFullDTO.toFullDTO(updatedLesson);

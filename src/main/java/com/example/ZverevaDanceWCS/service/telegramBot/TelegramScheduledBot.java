@@ -43,7 +43,7 @@ public class TelegramScheduledBot {
         for (Lesson lesson : lessons) {
             User student = lesson.getStudent();
             if (student.getMessenger() == Messenger.TELEGRAM) {
-                studentBot.send(student.getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.timeFormatter));
+                studentBot.send(student.getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.formatter));
                 log.info("Отправлено уведомление о занятии " + student.getName());
             }
         }
