@@ -13,45 +13,18 @@
     <button onclick="continueAsGuest()">Продолжить без авторизации</button>
 
 <script>
-    const API_BASE = "http://localhost:8080"; // поменяйте если другой порт
+    const API_BASE = "http://localhost:8080";
+<!--    todo поменяйте если другой порт-->
 
     function loginGoogle() {
     console.log("Logging in with Google");
-        window.location = "/oauth2/authorization/google";
+         window.location.href = "/oauth2/authorization/google";
     }
 
     function continueAsGuest() {
     console.log("Continuing as guest");
         window.location = "/guest.html";
     }
-
-       async function checkAuth() {
-        try {
-            const resp = await fetch("/me");
-            if (!resp.ok) {
-                console.error("Ошибка /api/me:", resp.status);
-                return;
-            }
-
-            const data = await resp.json();
-
-            if (!data.authenticated) {
-                // гость — остаёмся на index.html
-                return;
-            }
-
-            if (data.admin) {
-                window.location = "/admin.html";
-            } else {
-                window.location = "/user.html";
-            }
-        } catch (e) {
-            console.error("Ошибка при запросе /api/me", e);
-        }
-    }
-
-    // сразу после загрузки проверяем, вдруг уже залогинен
-    checkAuth();
 
 </script>
 
