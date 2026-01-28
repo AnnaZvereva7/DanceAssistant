@@ -17,7 +17,7 @@ import com.example.ZverevaDanceWCS.service.model.user.*;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserFullDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByAdminDto;
-import com.example.ZverevaDanceWCS.service.telegramBot.TelegramBot;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramStudentBot;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -36,11 +36,11 @@ import java.util.stream.Collectors;
 public class TrainerController {
     final UserService userService;
     final LessonService lessonService;
-    final TelegramBot bot;
+    final TelegramStudentBot bot;
     final PaymentService paymentService;
     final InfoService infoService;
 
-    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService) {
+    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramStudentBot bot, PaymentService paymentService, InfoService infoService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
@@ -66,12 +66,12 @@ public class TrainerController {
             String response = lessonService.lessonsToBill(lessons);
             User student = userService.findById(id);
             if (student.getMessenger() == Messenger.TELEGRAM) {
-                bot.sendMessage(student.getChatId(), response);
+                bot.send(student.getChatId(), response);
             }
-            bot.sendMessage(Constant.adminChatId, "Bill sent to " + student.getName() + ":\n" + response);
+            bot.send(Constant.adminChatId, "Bill sent to " + student.getName() + ":\n" + response);
             return true;
         } catch (RuntimeException e) {
-            bot.sendMessage(Constant.adminChatId, "Failed to send bill to user id " + id + ": " + e.getMessage());
+            bot.send(Constant.adminChatId, "Failed to send bill to user id " + id + ": " + e.getMessage());
             return false;
         }
 

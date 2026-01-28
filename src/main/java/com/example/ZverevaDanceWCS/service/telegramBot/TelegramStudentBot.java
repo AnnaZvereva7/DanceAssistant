@@ -56,7 +56,7 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
                 User student = userService.findByChatId(chatId);
                 String command = getCommand(messageText);
                 String[] addInfo = additionalCommandInformation(messageText, command, " ");
-                if (student.getRole() == UserRole.NEW
+                if (student.getRole() == UserRole.BY_REQUEST
                         || student.getRole() == UserRole.PERMANENT
                         || student.getRole() == UserRole.OLD) {
                     onUpdateReceivedStudent(command, addInfo, chatId, name);

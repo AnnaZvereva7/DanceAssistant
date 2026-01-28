@@ -9,15 +9,10 @@ import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
-import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserShortDAO;
-import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
 import com.example.ZverevaDanceWCS.service.model.studentInfo.InfoService;
-import com.example.ZverevaDanceWCS.service.model.studentInfo.InfoStatus;
 import com.example.ZverevaDanceWCS.service.model.user.User;
-import com.example.ZverevaDanceWCS.service.model.user.UserRole;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,8 +65,8 @@ public class TelegramStudentService {
            return lessons.stream()
                     .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
                     .sorted(Comparator.comparing(Lesson::getStartTime))
-                    .map(LessonUserShortDAO::new)
-                    .map(LessonUserShortDAO::toString)
+                    .map(LessonUserDAO::new)
+                    .map(LessonUserDAO::toString)
                     .collect(Collectors.joining("\n"));
         }
     }
