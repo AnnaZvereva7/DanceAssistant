@@ -1,7 +1,6 @@
 package com.example.ZverevaDanceWCS.service.model.lessons;
 
 import com.example.ZverevaDanceWCS.service.calendar.GoogleCalendarService;
-import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.exception.ExceptionForAdmin;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
@@ -93,7 +92,7 @@ public class LessonService {
 
     @Transactional
     public Lesson updateLesson(Lesson lesson) {
-        calendarService.updateEvent(lesson.getGoogleEventId(), lesson.getTitle(), lesson.getStudent().getPlans(), lesson.getStartTime(), lesson.getEndTime());
+        calendarService.updateEvent(lesson.getGoogleEventId(), lesson.getTitle(), lesson.getStudent().getAdditionalInfo(), lesson.getStartTime(), lesson.getEndTime());
         return lessonsRepository.save(lesson);
     }
 
@@ -203,7 +202,7 @@ public class LessonService {
     public void addExistedToGoogle() {
         List<Lesson> lessons = lessonsRepository.findByStatusInAndStartTimeAfter(List.of(LessonStatus.NEW, LessonStatus.PLANNED), LocalDateTime.now());
         for (Lesson lesson : lessons) {
-            String event_id = calendarService.addEvent(lesson.getTitle(), lesson.getStudent().getPlans(), lesson.getStartTime(), lesson.getEndTime());
+            String event_id = calendarService.addEvent(lesson.getTitle(), lesson.getStudent().getAdditionalInfo(), lesson.getStartTime(), lesson.getEndTime());
             lesson.setGoogleEventId(event_id);
             lessonsRepository.save(lesson);
         }
@@ -239,7 +238,7 @@ public class LessonService {
     public List<PaymentDTO> findAllBalance() {
         List<PaymentDTO> payments = new ArrayList<>();
         List<User> users = userService.findAllByRoleIn(List
-                .of(UserRole.NEW, UserRole.PERMANENT, UserRole.GROUP));
+                .of(UserRole.BY_REQUEST, UserRole.PERMANENT, UserRole.GROUP));
         for (User student : users) {
             List<Lesson> lessons = findByStatusAndStudentId(LessonStatus.COMPLETED, student.getId())
                     .stream()

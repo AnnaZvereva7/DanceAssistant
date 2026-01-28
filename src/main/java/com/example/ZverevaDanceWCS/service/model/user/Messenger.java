@@ -2,5 +2,6 @@ package com.example.ZverevaDanceWCS.service.model.user;
 
 public enum Messenger {
     TELEGRAM,
-    WHATSAPP;
+    WHATSAPP,
+    NONE;
 }

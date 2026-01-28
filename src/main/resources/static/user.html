@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>DanceAssistant - UserPage</title>
+    <style>
+        :root{
+          --bg:#0b1020;
+          --card:#121a33;
+          --card2:#0f1730;
+          --text:#e9ecf5;
+          --muted:#aab3d4;
+          --border:rgba(255,255,255,.10);
+          --shadow: 0 10px 30px rgba(0,0,0,.35);
+          --radius:16px;
+          --accent:#6ea8fe;
+          --accent2:#7ee787;
+        }
+
+        *{box-sizing:border-box}
+        body{
+          margin:0;
+          font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+          color:var(--text);
+          background: radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.18), transparent 60%),
+                      radial-gradient(900px 500px at 90% 20%, rgba(126,231,135,.14), transparent 55%),
+                      var(--bg);
+          min-height:100vh;
+          padding:24px;
+        }
+
+        h1{
+          margin: 18px 0 12px;
+          font-size: 28px;
+          letter-spacing:.2px;
+        }
+
+        .page{
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+
+        /* Top user panel */
+        .user-panel{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:16px;
+          padding:16px 18px;
+          background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+          border:1px solid var(--border);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow);
+          position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 1000;
+        }
+        .user-info{
+          display:flex;
+          flex-direction:column;
+          gap:4px;
+        }
+        #userNameSession{
+          font-weight:700;
+          font-size:16px;
+        }
+        #statusSession{
+          color:var(--muted);
+          font-size:13px;
+        }
+
+        .logout-btn{
+          appearance:none;
+          border:1px solid var(--border);
+          background: rgba(255,255,255,.04);
+          color: var(--text);
+          padding:10px 14px;
+          border-radius: 12px;
+          cursor:pointer;
+          transition:.15s ease;
+        }
+        .logout-btn:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+        .logout-btn:active{ transform: translateY(0px); }
+
+        /* Tabs */
+        .tabs{
+          display:flex;
+          flex-wrap:wrap;
+          gap:10px;
+          margin: 14px 0 18px;
+        }
+        .tab-btn{
+          border:1px solid var(--border);
+          background: rgba(255,255,255,.03);
+          color: var(--text);
+          padding:10px 14px;
+          border-radius: 999px;
+          cursor:pointer;
+          transition:.15s ease;
+          font-weight:600;
+        }
+        .tab-btn:hover{ border-color: rgba(255,255,255,.18); transform: translateY(-1px); }
+        .tab-btn.active{
+          background: linear-gradient(180deg, rgba(110,168,254,.25), rgba(110,168,254,.12));
+          border-color: rgba(110,168,254,.55);
+          box-shadow: 0 10px 24px rgba(110,168,254,.12);
+        }
+
+        /* Content cards */
+        .container{
+          display:block;
+        }
+        .tab{
+          display:none;
+          background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+          border:1px solid var(--border);
+          border-radius: var(--radius);
+          box-shadow: var(--shadow);
+          padding:18px;
+        }
+        .tab.visible{ display:block; }
+
+        .tab h3{
+          margin:0 0 14px;
+          font-size:18px;
+        }
+
+        /* Forms grid */
+        .form-grid{
+          display:grid;
+          grid-template-columns: 1fr 1fr;
+          gap:14px;
+        }
+        @media (max-width: 840px){
+          .form-grid{ grid-template-columns: 1fr; }
+        }
+
+        label{
+          display:flex;
+          flex-direction:column;
+          gap:6px;
+          font-size:13px;
+          color: var(--muted);
+        }
+
+        input, select, textarea{
+          width:100%;
+          border:1px solid var(--border);
+          background: rgba(10,14,30,.55);
+          color: var(--text);
+          border-radius: 12px;
+          padding:10px 12px;
+          outline:none;
+          transition:.15s ease;
+        }
+        textarea{ resize: vertical; min-height: 90px; }
+        input:focus, select:focus, textarea:focus{
+          border-color: rgba(110,168,254,.6);
+          box-shadow: 0 0 0 4px rgba(110,168,254,.12);
+        }
+
+        .actions{
+          display:flex;
+          gap:10px;
+          flex-wrap:wrap;
+          margin-top: 12px;
+        }
+
+        .primary-btn{
+          border:none;
+          background: linear-gradient(180deg, rgba(126,231,135,.95), rgba(126,231,135,.65));
+          color:#04120a;
+          font-weight:800;
+          padding:10px 14px;
+          border-radius: 12px;
+          cursor:pointer;
+          transition:.15s ease;
+        }
+        .primary-btn:hover{ transform: translateY(-1px); }
+        .primary-btn:active{ transform: translateY(0px); }
+
+        .secondary-btn{
+          border:1px solid var(--border);
+          background: rgba(255,255,255,.04);
+          color: var(--text);
+          font-weight:700;
+          padding:10px 14px;
+          border-radius: 12px;
+          cursor:pointer;
+          transition:.15s ease;
+        }
+        .secondary-btn:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+
+        /* Schedule list */
+        #schedule{
+          list-style:none;
+          padding:0;
+          margin:0 0 10px;
+          display:flex;
+          flex-direction:column;
+          gap:10px;
+        }
+        #schedule li{
+          padding:12px 12px;
+          border:1px solid var(--border);
+          border-radius: 12px;
+          background: rgba(255,255,255,.03);
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:12px;
+        }
+        .pill{
+          font-size:12px;
+          padding:4px 10px;
+          border-radius:999px;
+          border:1px solid var(--border);
+          color: var(--muted);
+          background: rgba(255,255,255,.02);
+          white-space:nowrap;
+        }
+
+        /* Small helper */
+        .muted{ color: var(--muted); }
+    </style>
+</head>
+
+<body>
+<div class="page">
+
+    <div class="user-panel">
+        <div class="user-info">
+            <div id="userNameSession">UserName</div>
+            <div id="statusSession">Status</div>
+        </div>
+
+        <form method="post" action="/logout">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </div>
+
+    <h1>DanceAssistant</h1>
+
+    <div class="tabs">
+        <button id="loadScheduleBtn" class="tab-btn">Schedule</button>
+        <button id="loadUserInfoBtn" class="tab-btn">MyInfo</button>
+        <button id="loadPaymentBtn" class="tab-btn">Payments</button>
+        <button id="musicServiceBtn" class="tab-btn">Music</button>
+    </div>
+
+    <div class="container">
+        <div id="scheduleTab" class="tab">
+            <h3>Schedule</h3>
+            <ul id="schedule"></ul>
+            <div class="actions">
+                <button id="newLessonBtn" class="secondary-btn">Add New Lesson</button>
+            </div>
+        </div>
+
+        <div id="studentDetails" class="tab">
+            <h3>My details</h3>
+            <div class="form-grid">
+                <label>Name:
+                    <input type="text" id="studentName">
+                </label>
+                <label>Email:
+                    <input type="email" id="studentEmail">
+                </label>
+                <label>Birthday:
+                    <input type="date" id="studentBirthday">
+                </label>
+                <label>Plans:
+                    <textarea id="studentPlans" rows="6"></textarea>
+                </label>
+                <label>Schedule:
+                    <textarea id="studentSchedule"></textarea>
+                </label>
+            </div>
+
+            <div class="actions">
+                <button id="saveChangesStudentBtn" class="primary-btn">Save Changes</button>
+            </div>
+        </div>
+
+        <div id="paymentDetails" class="tab">
+            <h3>Payment details</h3>
+
+            <div class="form-grid">
+                <label>Completed Lessons:
+                    <textarea id="completedLessons" rows="10"></textarea>
+                </label>
+
+                <label>Balance:
+                    <input type="number" id="balance">
+                </label>
+
+                <label>Month:
+                    <select id="monthOfPayment">
+                        <option value="JANUARY">JANUARY</option>
+                        <option value="FEBRUARY">FEBRUARY</option>
+                        <option value="MARCH">MARCH</option>
+                        <option value="APRIL">APRIL</option>
+                        <option value="MAY">MAY</option>
+                        <option value="JUNE">JUNE</option>
+                        <option value="JULY">JULY</option>
+                        <option value="AUGUST">AUGUST</option>
+                        <option value="SEPTEMBER">SEPTEMBER</option>
+                        <option value="OCTOBER">OCTOBER</option>
+                        <option value="NOVEMBER">NOVEMBER</option>
+                        <option value="DECEMBER">DECEMBER</option>
+                    </select>
+                </label>
+
+                <label>Year:
+                    <input type="number" id="yearOfPayment" value="2026">
+                </label>
+            </div>
+
+            <div class="actions">
+                <button id="loadLessonsPaymentBtn" class="secondary-btn">Load Operations</button>
+            </div>
+
+            <div id="monthLessonPaymentDetails" class="tab visible" style="display:none; margin-top:14px;">
+                <h3>Lessons and Payment in selected month</h3>
+                <textarea id="monthDetails" rows="10"></textarea>
+            </div>
+        </div>
+
+        <div id="musicTab" class="tab">
+            <h3>Music</h3>
+            <div class="muted">Здесь будет твой музыкальный функционал 🙂</div>
+        </div>
+    </div>
+
+</div>
+<script>
+    const API_BASE = "http://localhost:8080/user";
+
+    // ---------- Tab logic ----------
+    const tabs = {
+      schedule: document.getElementById("scheduleTab"),
+      info: document.getElementById("studentDetails"),
+      payments: document.getElementById("paymentDetails"),
+      music: document.getElementById("musicTab"),
+    };
+
+    const buttons = {
+      schedule: document.getElementById("loadScheduleBtn"),
+      info: document.getElementById("loadUserInfoBtn"),
+      payments: document.getElementById("loadPaymentBtn"),
+      music: document.getElementById("musicServiceBtn"),
+    };
+
+    function showTab(tabKey){
+      // hide all tabs
+      Object.values(tabs).forEach(t => t.classList.remove("visible"));
+      // deactivate all buttons
+      Object.values(buttons).forEach(b => b.classList.remove("active"));
+
+      // show selected
+      tabs[tabKey].classList.add("visible");
+      buttons[tabKey].classList.add("active");
+    }
+
+    // Default open
+    showTab("schedule");
+
+    // ---------- Buttons ----------
+    buttons.schedule.addEventListener("click", async () => {
+      showTab("schedule");
+      await loadSchedule();
+    });
+
+    buttons.info.addEventListener("click", async () => {
+      showTab("info");
+      await loadThisUser();
+    });
+
+    buttons.payments.addEventListener("click", async () => {
+      showTab("payments");
+      await loadPaymentDetails?.(); // если у тебя есть функция
+    });
+
+    buttons.music.addEventListener("click", async () => {
+      showTab("music");
+      // тут можешь вызвать loadMusic() если будет
+    });
+
+    document.getElementById("newLessonBtn").addEventListener("click", addNewLesson);
+    document.getElementById("saveChangesStudentBtn").addEventListener("click", saveChangesStudent);
+
+    document.getElementById("loadLessonsPaymentBtn").addEventListener("click", async () => {
+      await loadMonthLessonsPaymentDetails?.(); // если у тебя есть функция
+      // показать блок деталей месяца (внутри Payments)
+      const monthBlock = document.getElementById("monthLessonPaymentDetails");
+      if (monthBlock) monthBlock.style.display = "block";
+    });
+
+    // ---------- Fix: loadSchedule writes to UL, not to scheduleTab ----------
+    async function loadSchedule() {
+      const list = document.getElementById("schedule"); // ВАЖНО: ul#schedule
+      list.innerHTML = "<li>Loading...</li>";
+
+      try {
+        const response = await fetch(API_BASE + "/schedule");
+        if (!response.ok) {
+          list.innerHTML = "<li>Error loading lessons</li>";
+          return;
+        }
+
+        const lessons = await response.json();
+        list.innerHTML = "";
+
+        if (!lessons || lessons.length === 0) {
+          list.innerHTML = "<li>No lessons found</li>";
+          return;
+        }
+
+        lessons.forEach(lesson => {
+          const li = document.createElement("li");
+
+          const left = document.createElement("div");
+          left.textContent = `${lesson.dateTime}`;
+
+          const right = document.createElement("span");
+          right.className = "pill";
+          right.textContent = lesson.status ?? "UNKNOWN";
+
+          li.appendChild(left);
+          li.appendChild(right);
+          list.appendChild(li);
+        });
+
+      } catch (error) {
+        console.error(error);
+        list.innerHTML = "<li>Error loading lessons</li>";
+      }
+    }
+
+    async function loadThisUser() {
+      try {
+        const response = await fetch(API_BASE + "/my_info");
+        const student = await response.json();
+
+        document.getElementById("studentName").value = student.name ?? "";
+        document.getElementById("studentEmail").value = student.email ?? "";
+        document.getElementById("studentBirthday").value = student.birthday ?? "";
+        document.getElementById("studentPlans").value = student.additionalInfo ?? "";
+        document.getElementById("studentSchedule").value = student.schedule ?? "";
+      } catch (error) {
+        console.error("Error loading student:", error);
+      }
+    }
+
+    async function saveChangesStudent() {
+      const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+      const studentData = {
+        name: document.getElementById("studentName").value,
+        email: document.getElementById("studentEmail").value,
+        birthday: document.getElementById("studentBirthday").value
+      };
+
+      try {
+        const response = await fetch(API_BASE + "/change", {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-XSRF-TOKEN": csrf
+          },
+          body: JSON.stringify(studentData)
+        });
+
+        if (!response.ok) {
+          console.error("Error:", response.status, response.statusText);
+          alert("Не удалось обновить пользователя");
+          return;
+        }
+        alert("Data updated successfully.");
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Error updating data.");
+      }
+    }
+
+    async function loadPaymentDetails() {
+  try {
+    const response = await fetch(API_BASE + "/to_pay");
+    if (!response.ok) {
+      throw new Error("Failed to load payment info");
+    }
+
+    const paymentInfo = await response.json();
+
+    document.getElementById("completedLessons").value =
+      (paymentInfo.completedLessons ?? []).join("\n");
+
+    document.getElementById("balance").value =
+      paymentInfo.balance ?? 0;
+
+  } catch (error) {
+    console.error("Error loading payment details:", error);
+    alert("Error loading payment details");
+  }
+}
+
+// ---------- Payment: month details ----------
+async function loadMonthLessonsPaymentDetails() {
+  const month = document.getElementById("monthOfPayment").value;
+  const year = document.getElementById("yearOfPayment").value;
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/month_details?month=${month}&year=${year}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to load month details");
+    }
+
+    const monthDetails = await response.json();
+
+    document.getElementById("monthDetails").value =
+      JSON.stringify(monthDetails, null, 2);
+
+  } catch (error) {
+    console.error("Error loading month lessons and payment details:", error);
+    alert("Error loading month details");
+  }
+}
+
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+      return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    async function loadMe() {
+      const res = await fetch("/api/me");
+      if (res.status === 401) {
+        window.location.href = "/index.html";
+        return;
+      }
+      const data = await res.json();
+      document.getElementById("userNameSession").textContent = data.userName;
+      document.getElementById("statusSession").textContent = data.status;
+    }
+
+    loadMe();
+    loadSchedule();
+
+    // заглушки (если у тебя нет пока этих функций, чтобы не падало)
+    function addNewLesson(){ /* TODO */ }
+</script>
+
+</body>
+</html>

@@ -1,139 +1,105 @@
 package com.example.ZverevaDanceWCS.service.controller;
 
-import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
-import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonFullDTO;
+import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDTO;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
+import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
-import com.example.ZverevaDanceWCS.service.model.studentInfo.InfoService;
-import com.example.ZverevaDanceWCS.service.model.studentInfo.NewInfoDTO;
-import com.example.ZverevaDanceWCS.service.model.studentInfo.StudentInfo;
-import com.example.ZverevaDanceWCS.service.model.user.*;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserFullDTO;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateDto;
-import com.example.ZverevaDanceWCS.service.telegramBot.TelegramStudentBot;
-import com.example.ZverevaDanceWCS.service.telegramBot.TelegramTrainerBot;
-import com.example.ZverevaDanceWCS.service.telegramBot.TelegramTrainerService;
+import com.example.ZverevaDanceWCS.service.model.payments.TransactionDataDao;
+import com.example.ZverevaDanceWCS.service.model.user.User;
+import com.example.ZverevaDanceWCS.service.model.user.UserService;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByAdminDto;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.DayOfWeek;
+import jakarta.servlet.http.HttpSession;
+import java.time.*;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @RestController
+@RequestMapping("/user")
+@PreAuthorize("hasRole('TRAINER') or hasRole('ADMIN')")
 public class UserController {
-    final UserService userService;
     final LessonService lessonService;
+    final UserService userService;
     final PaymentService paymentService;
-    final InfoService infoService;
-    final TelegramTrainerBot trainerBot;
-    final TelegramStudentBot studentBot;
 
-
-    public UserController(UserService userService, UserRepository userRepository, LessonService lessonService, PaymentService paymentService,
-                          InfoService infoService, TelegramTrainerBot trainerBot, TelegramStudentBot studentBot) {
-        this.userService = userService;
+    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService) {
         this.lessonService = lessonService;
+        this.userService = userService;
         this.paymentService = paymentService;
-        this.infoService = infoService;
-        this.trainerBot = trainerBot;
-        this.studentBot = studentBot;
     }
 
-    @GetMapping("/user/{id}")
-    public UserFullDTO getUserById(@PathVariable int id) {
-        return UserFullDTO.toFullDTO(userService.findByIdWithInfo(id));
+    //User endpoint, update details
+    @PutMapping("/change")
+    public UserUpdateByUserDto updateUserDetails(@Valid @RequestBody UserUpdateByUserDto userDto, HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return userService.updateByUser(userDto, userId);
     }
 
-    @GetMapping("/user/send_bill/{id}")
-    public Boolean sendBill(@PathVariable int id) {
-        try {
-            List<Lesson> lessons = lessonService.findByStatusAndStudentId(LessonStatus.COMPLETED, id)
-                    .stream()
-                    .sorted()
-                    .collect(Collectors.toList());
-
-            String response = lessonService.lessonsToBill(lessons);
-            User student = userService.findById(id);
-            if (student.getMessenger() == Messenger.TELEGRAM) {
-               studentBot.send(student.getChatId(), response);
-            }
-           trainerBot.send(Constant.adminChatId, "Bill sent to " + student.getName() + ":\n" + response);
-            return true;
-        } catch (RuntimeException e) {
-            trainerBot.send(Constant.adminChatId, "Failed to send bill to user id " + id + ": " + e.getMessage());
-            return false;
-        }
-
-    }
-
-    @GetMapping("/users")
-    public List<UserShortDTO> getUsers() {
-        return userService.findAllByRole(null).stream().map(UserShortDTO::toShortDTO).toList();
-    }
-
-    @GetMapping("/users/balance")
-    public List<PaymentDTO> getBalances() {
-        return lessonService.findAllBalance()
+    //User and Admin endpoint
+    @GetMapping("/schedule")
+    public List<LessonUserDAO> getLessonById(HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return lessonService.findByStudentAndDateAfter(userId, LocalDateTime.now())
                 .stream()
-                .sorted(Comparator.comparing(PaymentDTO::getBalance))
+                .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
+                .sorted(Comparator.comparing(Lesson::getStartTime))
+                .map(lesson -> new LessonUserDAO(lesson))
                 .toList();
     }
 
-    @GetMapping("/user/balance/{id}")
-    public PaymentDTO getBalances(@PathVariable int id) {
-        return lessonService.findBalanceByStudentId(id);
+    //User endpoint, get details
+    @GetMapping("/my_info")
+    public UserUpdateByUserDto getUserDetails(HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return UserUpdateByUserDto.fromUser(userService.findByIdWithInfo(userId));
     }
 
-    @PostMapping("/payment/{id}/{sum}")
-    @Transactional
-    public PaymentDTO paymentReceived(@PathVariable int id, @PathVariable int sum) {
-        User student = userService.findById(id);
-        paymentService.saveNew(student, sum, java.time.LocalDate.now()); //todo add actual date from payment
-        int balance = student.getBalance();
-        balance += sum;
-        student.setBalance(balance);
-        userService.saveUser(student);
-        lessonService.paymentToLessons(id, sum);
-        return lessonService.findBalanceByStudentId(id);
+    @GetMapping("/to_pay")
+    public PaymentDTO toPay(HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return lessonService.findBalanceByStudentId(userId);
     }
 
-    @PostMapping ("/user/new_info")
-    public StudentInfo addNewInfo(@Valid @RequestBody NewInfoDTO newInfo) {
-        log.info("Adding new info for student id="+newInfo.getStudentId());
-        StudentInfo studentInfo = infoService.saveFromNewInfoDTO(newInfo);
-        User student = userService.findById(studentInfo.getStudentId());
-        if(student.getMessenger()==Messenger.TELEGRAM) {
-            studentBot.send(student.getChatId(), "New information added:\n"+studentInfo.toString());
-        }
-        return infoService.saveFromNewInfoDTO(newInfo);
-    }
+    @GetMapping("/month_details/{month}/{year}")
+    public List<TransactionDataDao> getPaymentsLessons(@PathVariable String month, @PathVariable @PastOrPresent int year, HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        Month monthEnum = Month.valueOf(month.toUpperCase());
 
-    @PutMapping("/user/change")
-    public UserFullDTO updateUser(@Valid @RequestBody UserUpdateDto userUpdateDto) {
-        User userToUpdate = userService.findById(userUpdateDto.getStudentId());
-        userToUpdate.setName(userUpdateDto.getName());
-        userToUpdate.setRole(userUpdateDto.getRole());
-        if(userUpdateDto.getEmail()!=null) {
-            userToUpdate.setEmail(userUpdateDto.getEmail());
-        }
-        if(userUpdateDto.getSchedule()!=null && userUpdateDto.getSchedule().equals("Not set")) {
-            userToUpdate.setScheduleDay(null);
-            userToUpdate.setScheduleTime(null);
-        } else if (userUpdateDto.getSchedule()!=null) {
-            String[] scheduleParts = userUpdateDto.getSchedule().split(" ");
-            userToUpdate.setScheduleDay(DayOfWeek.valueOf(scheduleParts[0]));
-            userToUpdate.setScheduleTime(java.time.LocalTime.parse(scheduleParts[1]));
-        }
-        User savedUser = userService.saveUser(userToUpdate);
-        return UserFullDTO.toFullDTO(savedUser);
+        YearMonth yearMonth = YearMonth.of(year, monthEnum);
+
+        LocalDate start = yearMonth
+                .atDay(1);
+
+        LocalDate end = yearMonth
+                .atEndOfMonth();
+
+        List<Lesson> lessons = lessonService.findByStudentAndPeriod(userId, start, end)
+                .stream()
+                .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
+                .toList();
+        List<Payment> payments = paymentService.findByStudentAndPeriod(userId, start, end);
+
+        List<TransactionDataDao> result = new ArrayList<>();
+        result= Stream.concat(
+                lessons.stream().map(lesson -> TransactionDataDao.fromLesson(lesson)),
+                payments.stream().map(payment -> TransactionDataDao.fromPayment(payment))
+        ).sorted(Comparator.comparing(TransactionDataDao::getDate))
+                .toList();
+        return result;
     }
 
 }

@@ -7,13 +7,13 @@ CREATE TABLE IF NOT EXISTS users (
     chat_id BIGINT UNIQUE,
     email VARCHAR(100) UNIQUE,
     role VARCHAR(50) NOT NULL DEFAULT 'NEW',
-    plans VARCHAR(255),
     birthday DATE,
     messenger VARCHAR(50) NOT NULL,
     balance INTEGER DEFAULT 0,
     language VARCHAR(10) DEFAULT 'ENG',
     schedule_day VARCHAR(50),
-    schedule_time TIME
+    schedule_time TIME,
+    user_site_status VARCHAR(50) DEFAULT 'ACTIVE'
 );
 
 --INSERT INTO users (name, chat_name, email, role, birthday, chat_id, messenger) VALUES
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS lessons (
     duration_min INT,
     status VARCHAR(50) NOT NULL DEFAULT 'NEW',
 --    recap/to_do убрать потом
-    to_do VARCHAR(255),
+    to_do TEXT,
     cost INT DEFAULT 0,
     for_payment INT DEFAULT 0,
     google_event_id VARCHAR UNIQUE,
