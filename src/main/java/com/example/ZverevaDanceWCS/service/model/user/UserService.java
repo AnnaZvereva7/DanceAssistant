@@ -4,9 +4,11 @@ import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.studentInfo.InfoService;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserNewDTO;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,7 +31,7 @@ public class UserService {
     public User newUser(String name) {
         User newUser = new User();
         newUser.setName(name);
-        newUser.setRole(UserRole.NEW);
+        newUser.setRole(UserRole.BY_REQUEST);
         newUser.setBalance(0);
         return userRepository.save(newUser);
     }
@@ -41,9 +43,10 @@ public class UserService {
         }
         newUser.setChatName(chatName);
         newUser.setChatId(chatId);
-        newUser.setRole(UserRole.NEW);
+        newUser.setRole(UserRole.BY_REQUEST);
         newUser.setMessenger(Messenger.TELEGRAM);
         newUser.setBalance(0);
+        newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
         return userRepository.save(newUser);
     }
 
@@ -52,13 +55,48 @@ public class UserService {
         newUser.setName(userNewDTO.getName());
         newUser.setChatName(userNewDTO.getName());
         newUser.setEmail(userNewDTO.getEmail());
-        newUser.setRole(UserRole.NEW);
-        newUser.setMessenger(Messenger.WHATSAPP);
+        newUser.setRole(UserRole.BY_REQUEST);
+        newUser.setMessenger(Messenger.NONE);
         newUser.setBalance(0);
         newUser.setLanguage(Language.ENG);
         newUser.setBirthday(LocalDate.parse(userNewDTO.getBirthday().formatted(Constant.formatter)));
+        newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
         return userRepository.save(newUser);
     }
+
+    public UserUpdateByUserDto updateByUser(UserUpdateByUserDto dto, int userId) {
+        User user = findByIdWithInfo(userId);
+        user.setName(dto.getName());
+        user.setEmail(dto.getEmail());
+        user.setBirthday(dto.getBirthday());
+        userRepository.save(user);
+        dto.setAdditionalInfo(user.getAdditionalInfo());
+        dto.setSchedule(user.getScheduleDay() != null && user.getScheduleTime() != null
+                ? user.getScheduleDay().toString() + " " + user.getScheduleTime().toString()
+                : "Not set");
+        return dto;
+    }
+
+
+    @Transactional
+    public User findOrCreateNewUserFromGoogle(String email, String name) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            return userOptional.get();
+        } else {
+            User newUser = new User();
+            newUser.setName(name);
+            newUser.setChatName(name);
+            newUser.setEmail(email);
+            newUser.setRole(UserRole.BY_REQUEST);
+            newUser.setMessenger(Messenger.NONE);
+            newUser.setBalance(0);
+            newUser.setLanguage(Language.ENG);
+            newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
+            return userRepository.save(newUser);
+        }
+    }
+
 
     public List<User> findAll() {
         return userRepository.findAll();
@@ -90,10 +128,10 @@ public class UserService {
 
     public User findByIdWithInfo(int id) {
         User student = findById(id);
-        log.info("Loading plans for student id=" + id+": "+student.getPlans());
+        log.info("Loading plans for student id=" + id+": "+student.getAdditionalInfo());
         String plans = infoService.findByStudentActual(id);
         log.info("Found plans: "+plans);
-        student.setPlans(plans);
+        student.setAdditionalInfo(plans);
         return student;
     }
 

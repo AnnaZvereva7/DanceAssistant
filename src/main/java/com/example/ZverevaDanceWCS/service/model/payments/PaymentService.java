@@ -58,4 +58,8 @@ public class PaymentService {
         LocalDate endDate= startDate.with(TemporalAdjusters.lastDayOfMonth());
         return paymentRepository.findByDateBetween(startDate, endDate);
     }
+
+    public List<Payment> findByStudentAndPeriod(int studentId, LocalDate startDate, LocalDate endDate) {
+        return paymentRepository.findByStudentIdAndDateBetween(studentId, startDate, endDate);
+    }
 }

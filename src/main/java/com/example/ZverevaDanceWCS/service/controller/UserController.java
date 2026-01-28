@@ -1,40 +1,105 @@
 package com.example.ZverevaDanceWCS.service.controller;
 
+import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
+import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonFullDTO;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDTO;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
+import com.example.ZverevaDanceWCS.service.model.payments.Payment;
+import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
+import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
+import com.example.ZverevaDanceWCS.service.model.payments.TransactionDataDao;
+import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateDto;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByAdminDto;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PastOrPresent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpSession;
+import java.time.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Stream;
+
 @Slf4j
-@RestController("/user")
+@RestController
+@RequestMapping("/user")
+@PreAuthorize("hasRole('TRAINER') or hasRole('ADMIN')")
 public class UserController {
     final LessonService lessonService;
     final UserService userService;
+    final PaymentService paymentService;
 
-    public UserController(LessonService lessonService, UserService userService) {
+    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService) {
         this.lessonService = lessonService;
         this.userService = userService;
+        this.paymentService = paymentService;
     }
 
     //User endpoint, update details
-    @PutMapping("/change_user/{id}")
-    public void updateUserDetails(@Valid @RequestBody UserUpdateDto userUpdateDto) {
-
+    @PutMapping("/change")
+    public UserUpdateByUserDto updateUserDetails(@Valid @RequestBody UserUpdateByUserDto userDto, HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return userService.updateByUser(userDto, userId);
     }
 
     //User and Admin endpoint
-    @GetMapping("/lesson/{id}")
-    public LessonFullDTO getLessonById(@PathVariable int id) {
-        return LessonFullDTO.toFullDTO(lessonService.findById(id));
+    @GetMapping("/schedule")
+    public List<LessonUserDAO> getLessonById(HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return lessonService.findByStudentAndDateAfter(userId, LocalDateTime.now())
+                .stream()
+                .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
+                .sorted(Comparator.comparing(Lesson::getStartTime))
+                .map(lesson -> new LessonUserDAO(lesson))
+                .toList();
     }
 
     //User endpoint, get details
-    @GetMapping("/find_user/{id}")
-    public void getUserDetails(@PathVariable int id) {
+    @GetMapping("/my_info")
+    public UserUpdateByUserDto getUserDetails(HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return UserUpdateByUserDto.fromUser(userService.findByIdWithInfo(userId));
+    }
 
+    @GetMapping("/to_pay")
+    public PaymentDTO toPay(HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        return lessonService.findBalanceByStudentId(userId);
+    }
+
+    @GetMapping("/month_details/{month}/{year}")
+    public List<TransactionDataDao> getPaymentsLessons(@PathVariable String month, @PathVariable @PastOrPresent int year, HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        Month monthEnum = Month.valueOf(month.toUpperCase());
+
+        YearMonth yearMonth = YearMonth.of(year, monthEnum);
+
+        LocalDate start = yearMonth
+                .atDay(1);
+
+        LocalDate end = yearMonth
+                .atEndOfMonth();
+
+        List<Lesson> lessons = lessonService.findByStudentAndPeriod(userId, start, end)
+                .stream()
+                .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
+                .toList();
+        List<Payment> payments = paymentService.findByStudentAndPeriod(userId, start, end);
+
+        List<TransactionDataDao> result = new ArrayList<>();
+        result= Stream.concat(
+                lessons.stream().map(lesson -> TransactionDataDao.fromLesson(lesson)),
+                payments.stream().map(payment -> TransactionDataDao.fromPayment(payment))
+        ).sorted(Comparator.comparing(TransactionDataDao::getDate))
+                .toList();
+        return result;
     }
 
 }

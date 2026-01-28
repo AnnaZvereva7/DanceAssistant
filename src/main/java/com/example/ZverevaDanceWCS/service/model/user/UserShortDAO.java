@@ -18,7 +18,7 @@ public class UserShortDAO {
         this.name=user.getName();
         this.chatName=user.getChatName();
         this.role=user.getRole();
-        this.plans= user.getPlans();
+        this.plans= user.getAdditionalInfo();
         this.balance=user.getBalance();
     }
 

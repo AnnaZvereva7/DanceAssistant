@@ -7,7 +7,6 @@ import lombok.Setter;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Comparator;
 
@@ -36,8 +35,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     UserRole role;
 
-    @Column
-    String plans;
+    @Transient
+    String additionalInfo;
 
     @Column
     LocalDate birthday;
@@ -58,6 +57,10 @@ public class User {
     @Column(name = "schedule_time")
     LocalTime scheduleTime;
 
+    @Column(name="user_site_status")
+    @Enumerated(EnumType.STRING)
+    UserSiteStatus userSiteStatus;
+
 //    String googleAccessToken;
 //    String googleRefreshToken;
 //    LocalDateTime token_expiry;
@@ -71,10 +74,16 @@ public class User {
         this.role=userRole;
         this.messenger=Messenger.valueOf(messenger.toUpperCase());
         this.balance=0;
+        this.userSiteStatus=UserSiteStatus.ACTIVE;
     }
 
     public String toStringSchedule () {
-        return this.getName()+" ("+this.getId()+") -schedule: "+this.scheduleDay+ " "+this.scheduleTime.format(Constant.timeFormatter);
+        String day = (scheduleDay != null) ? scheduleDay.toString() : "not set";
+        String time = (scheduleTime != null)
+                ? scheduleTime.format(Constant.timeFormatter)
+                : "";
+
+        return "schedule: " + day + " " + time;
     }
 
     public static Comparator<User> compareById() {

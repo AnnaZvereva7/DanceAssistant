@@ -38,7 +38,7 @@ public class UserFullDTO {
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
-                user.getPlans(),
+                user.getAdditionalInfo(),
                 birthdayString,
                 user.getMessenger(),
                 user.getBalance(),

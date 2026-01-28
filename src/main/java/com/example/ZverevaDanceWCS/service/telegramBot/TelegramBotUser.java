@@ -7,7 +7,6 @@ import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.exception.WrongDateException;
 import com.example.ZverevaDanceWCS.service.model.lessons.*;
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
-import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserShortDAO;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,8 +84,8 @@ public class TelegramBotUser {
                 return lessonService.findByStudentAndPeriod(student.getId(), LocalDate.now(), date)
                         .stream()
                         .filter(lesson -> lesson.getStatus()!=LessonStatus.CANCELED)
-                        .map(LessonUserShortDAO::new)
-                        .map(LessonUserShortDAO::toString)
+                        .map(LessonUserDAO::new)
+                        .map(LessonUserDAO::toString)
                         .collect(Collectors.joining("\n"));
             }
         } else {
@@ -103,8 +102,8 @@ public class TelegramBotUser {
             return lessons.stream()
                     .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
                     .sorted(Comparator.comparing(Lesson::getStartTime))
-                    .map(LessonUserShortDAO::new)
-                    .map(LessonUserShortDAO::toString)
+                    .map(LessonUserDAO::new)
+                    .map(LessonUserDAO::toString)
                     .collect(Collectors.joining("\n"));
         }
     }

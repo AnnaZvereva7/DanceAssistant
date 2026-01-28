@@ -452,7 +452,7 @@ public class TelegramBotAdmin {
         if (addInfo == null) {
             List<User> students = userService.findAll();
             return students.stream()
-                    .filter(student -> student.getPlans() != null)
+                    .filter(student -> student.getAdditionalInfo() != null)
                     .map(UserShortDAO::new)
                     .map(UserShortDAO::stringPlans)
                     .collect(Collectors.joining("\n"));
@@ -483,7 +483,7 @@ public class TelegramBotAdmin {
                     return "New name for " + student.getChatName() + ": " + student.getName();
                 case "plans":
                     //todo check email
-                    student.setPlans(addInfo[2]);
+                    student.setAdditionalInfo(addInfo[2]);
                     student = userService.saveUser(student);
                     return "New plans for " + student.getName();
                 case "birthday":

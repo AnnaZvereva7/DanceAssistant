@@ -16,11 +16,11 @@ import com.example.ZverevaDanceWCS.service.model.studentInfo.StudentInfo;
 import com.example.ZverevaDanceWCS.service.model.user.*;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserFullDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateDto;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByAdminDto;
 import com.example.ZverevaDanceWCS.service.telegramBot.TelegramBot;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,15 +30,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-@RestController("/admin")
-public class AdminController {
+@RestController
+@RequestMapping("/trainer")
+@PreAuthorize("hasRole('TRAINER') or hasRole('ADMIN')")
+public class TrainerController {
     final UserService userService;
     final LessonService lessonService;
     final TelegramBot bot;
     final PaymentService paymentService;
     final InfoService infoService;
 
-    public AdminController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService) {
+    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
@@ -119,23 +121,29 @@ public class AdminController {
 
     // User endpoint, update user info from DTO
     @PutMapping("/user/change")
-    public UserFullDTO updateUser(@Valid @RequestBody UserUpdateDto userUpdateDto) {
-        User userToUpdate = userService.findById(userUpdateDto.getStudentId());
-        userToUpdate.setName(userUpdateDto.getName());
-        userToUpdate.setRole(userUpdateDto.getRole());
-        if(userUpdateDto.getEmail()!=null) {
-            userToUpdate.setEmail(userUpdateDto.getEmail());
+    public UserFullDTO updateUser(@Valid @RequestBody UserUpdateByAdminDto userUpdateByAdminDto) {
+        User userToUpdate = userService.findById(userUpdateByAdminDto.getStudentId());
+        userToUpdate.setName(userUpdateByAdminDto.getName());
+        userToUpdate.setRole(userUpdateByAdminDto.getRole());
+        if(userUpdateByAdminDto.getEmail()!=null&&!userUpdateByAdminDto.getEmail().isBlank()) {
+            userToUpdate.setEmail(userUpdateByAdminDto.getEmail());
         }
-        if(userUpdateDto.getSchedule()!=null && userUpdateDto.getSchedule().equals("Not set")) {
+        if(userUpdateByAdminDto.getSchedule()!=null &&
+                userUpdateByAdminDto.getSchedule().equals("Not set")) {
             userToUpdate.setScheduleDay(null);
             userToUpdate.setScheduleTime(null);
-        } else if (userUpdateDto.getSchedule()!=null) {
-            String[] scheduleParts = userUpdateDto.getSchedule().split(" ");
+        } else if (userUpdateByAdminDto.getSchedule()!=null) {
+            String[] scheduleParts = userUpdateByAdminDto.getSchedule().split(" ");
             userToUpdate.setScheduleDay(DayOfWeek.valueOf(scheduleParts[0]));
             userToUpdate.setScheduleTime(java.time.LocalTime.parse(scheduleParts[1]));
         }
         User savedUser = userService.saveUser(userToUpdate);
         return UserFullDTO.toFullDTO(savedUser);
+    }
+
+    @GetMapping("/lesson/{id}")
+    public LessonFullDTO getLessonById(@PathVariable int id) {
+        return LessonFullDTO.toFullDTO(lessonService.findById(id));
     }
 
     // Admin endpoint, all completed lessons
