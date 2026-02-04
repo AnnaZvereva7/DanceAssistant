@@ -2,11 +2,13 @@ package com.example.ZverevaDanceWCS.service.model.user;
 
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
-import com.example.ZverevaDanceWCS.service.model.studentInfo.InfoService;
+import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
+import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
+import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoService;
+import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserNewDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,18 +16,22 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static com.google.common.graph.ElementOrder.sorted;
+
 @Slf4j
 @Service
 public class UserService {
 
-    @Autowired
     private final UserRepository userRepository;
-    @Autowired
     private final InfoService infoService;
+    private final ScheduleService scheduleService;
+    private final TrainerStudentService trainerStudentService;
 
-    public UserService(UserRepository userRepository, InfoService infoService) {
+    public UserService(UserRepository userRepository, InfoService infoService, ScheduleService scheduleService, TrainerStudentService trainerStudentService) {
         this.userRepository = userRepository;
         this.infoService = infoService;
+        this.scheduleService = scheduleService;
+        this.trainerStudentService = trainerStudentService;
     }
 
     public User newUser(String name) {
@@ -59,7 +65,7 @@ public class UserService {
         newUser.setMessenger(Messenger.NONE);
         newUser.setBalance(0);
         newUser.setLanguage(Language.ENG);
-        newUser.setBirthday(LocalDate.parse(userNewDTO.getBirthday().formatted(Constant.formatter)));
+        newUser.setBirthday(LocalDate.parse(userNewDTO.getBirthday().formatted(Constant.formatterDayTime)));
         newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
         return userRepository.save(newUser);
     }
@@ -71,9 +77,10 @@ public class UserService {
         user.setBirthday(dto.getBirthday());
         userRepository.save(user);
         dto.setAdditionalInfo(user.getAdditionalInfo());
-        dto.setSchedule(user.getScheduleDay() != null && user.getScheduleTime() != null
-                ? user.getScheduleDay().toString() + " " + user.getScheduleTime().toString()
-                : "Not set");
+        dto.setSchedules(scheduleService.findByStudent(user.getId())
+                .stream()
+                .map(Schedule::toShortDto)
+                .toList());
         return dto;
     }
 
@@ -98,8 +105,8 @@ public class UserService {
     }
 
 
-    public List<User> findAll() {
-        return userRepository.findAll();
+    public List<User> findAllByTrainerId(int trainerId) {
+        return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().sorted(User.compareById()).toList();
     }
 
     public User saveUser(User user) {
@@ -135,19 +142,15 @@ public class UserService {
         return student;
     }
 
-    public List<User> findAllByRole(UserRole role) {
+    public List<User> findAllByRoleAndTrainerId(UserRole role, int trainerId) {
         if (role == null) {
-            return userRepository.findAll().stream().sorted(User.compareById()).toList();
+            return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().sorted(User.compareById()).toList();
         } else {
-            return userRepository.findAllByRole(role).stream().sorted(User.compareById()).toList();
+            return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().filter(u->u.getRole()==role).sorted(User.compareById()).toList();
         }
     }
 
-    public List<User> usersWithSchedule() {
-        return userRepository.findByScheduleDayNotNull();
-    }
-
-    public List<User> findAllByRoleIn(List<UserRole> roles) {
-        return userRepository.findAllByRoleIn(roles);
+    public List<User> findAllByRoleInAndTrainerId(List<UserRole> roles, int trainerId) {
+        return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().filter(u->roles.contains(u.getRole())).sorted(User.compareById()).toList();
     }
 }

@@ -95,57 +95,34 @@ public class TelegramTrainerBot extends TelegramLongPollingBot {
                     send(chatId, serviceTrainer.printMenuAdmin());
                     break;
                 case "/schedule": //расписание на 7 дней от текущей даты(начало дня)
-                    send(chatId, serviceTrainer.schedule());
+                    send(chatId, serviceTrainer.schedule(chatId));
                     break;
                 case "/planned_lessons":
-                    send(chatId, serviceTrainer.plannedLessons());
-                    break;
-                case "/scheduled_students":
-                    send(chatId, serviceTrainer.scheduledStudents());
-                    break;
-                case "/add_by_schedule":
-                    responses = serviceTrainer.addBySchedule(chatId);
-                    processingHashMapResponse(responses, chatId);
+                    send(chatId, serviceTrainer.plannedLessons(chatId));
                     break;
                 case "/student_list":
                     try {
-                        send(chatId, serviceTrainer.studentList(addInfo));
+                        send(chatId, serviceTrainer.studentList(addInfo, chatId));
                     } catch (CommandNotRecognizedException e) {
                         send(chatId, "Error in command execution, check the data format");
                     }
-                    ;
                     break;
                 case "/month_payments":
                     try {
-                        send(chatId, serviceTrainer.monthPayment(addInfo));
+                        send(chatId, serviceTrainer.monthPaymentByTrainer(addInfo, chatId));
                     } catch (CommandNotRecognizedException e) {
                         send(chatId, "Error in command execution, check the data format");
                     }
                     break;
                 case "/year_payments":
                     try {
-                        send(chatId, serviceTrainer.yearPayments(addInfo));
-                    } catch (CommandNotRecognizedException e) {
-                        send(chatId, "Error in command execution, check the data format");
-                    }
-                    break;
-                case "/new_lesson": //id 01.01.25 09:30 - добавить урок по id ученика, сразу статус  PLANNED
-                    try {
-                        responses = serviceTrainer.newLesson(chatId, addInfo);
-                        processingHashMapResponse(responses, chatId);
-                    } catch (CommandNotRecognizedException e) {
-                        send(chatId, "Error in command execution, check the data format");
-                    }
-                    break;
-                case "/new_student": //name chat_name messenger role (PERMANENT, NEW)
-                    try {
-                        send(chatId, serviceTrainer.newStudent(addInfo));
+                        send(chatId, serviceTrainer.yearPaymentsByTrainer(addInfo, chatId));
                     } catch (CommandNotRecognizedException e) {
                         send(chatId, "Error in command execution, check the data format");
                     }
                     break;
                 case "/unpaid":
-                    send(chatId, serviceTrainer.unpaidLessons(addInfo));
+                    send(chatId, serviceTrainer.unpaidLessons(addInfo, chatId));
                     break;
                 case "/lesson_completed": //01.01.25 [id] (если без id то все уроки за дату выполнены)
                     try {
@@ -155,24 +132,9 @@ public class TelegramTrainerBot extends TelegramLongPollingBot {
                         send(chatId, "Error in command execution, check the data format");
                     }
                     break;
-                case "/student_change": //student_change_status:id newStatus
+                case "/balance": //balance
                     try {
-                        send(chatId, serviceTrainer.changeStudent(addInfo));
-                    } catch (CommandNotRecognizedException e) {
-                        send(chatId, "Error in command execution, check the data format");
-                    }
-                    break;
-                case "/change_lesson": //change_lesson:id 01.01 to 02.01.25 09:30 - change lesson
-                    try {
-                        responses = serviceTrainer.changeLessonTime(chatId, addInfo);
-                        processingHashMapResponse(responses,chatId);
-                    } catch (CommandNotRecognizedException e) {
-                        send(chatId, "Error in command execution, check the data format");
-                    }
-                    break;
-                case "/balance": //balance:[id]
-                    try {
-                        send(chatId, serviceTrainer.showBalance(addInfo));
+                        send(chatId, serviceTrainer.showBalance(chatId));
                     } catch (CommandNotRecognizedException e) {
                         send(chatId, "Error in command execution, check the data format");
                     }
@@ -181,21 +143,6 @@ public class TelegramTrainerBot extends TelegramLongPollingBot {
                     try {
                         responses = serviceTrainer.paymentReceived(chatId, addInfo);
                         processingHashMapResponse(responses,chatId);
-                    } catch (CommandNotRecognizedException e) {
-                        send(chatId, "Error in command execution, check the data format");
-                    }
-                    break;
-                case "/change_schedule"://change_schedule:id-[dayOfWeek-time]
-                    try {
-                        responses = serviceTrainer.changeSchedule(chatId, addInfo);
-                        processingHashMapResponse(responses, chatId);
-                    } catch (CommandNotRecognizedException e) {
-                        send(chatId, "Error in command execution, check the data format");
-                    }
-                    break;
-                case "/delete_schedule"://delete_schedule:id
-                    try {
-                        send(chatId, serviceTrainer.deleteSchedule(addInfo));
                     } catch (CommandNotRecognizedException e) {
                         send(chatId, "Error in command execution, check the data format");
                     }
@@ -211,7 +158,7 @@ public class TelegramTrainerBot extends TelegramLongPollingBot {
                     break;
                 case "/show_info": //"show_info:studentId
                     try {
-                        send(chatId, serviceTrainer.showInfo(addInfo));
+                        send(chatId, serviceTrainer.showInfo(addInfo, chatId));
                     } catch (CommandNotRecognizedException e) {
                         send(chatId, "Error in command execution, check the data format");
                     }
@@ -235,13 +182,6 @@ public class TelegramTrainerBot extends TelegramLongPollingBot {
                     try {
                         responses = serviceTrainer.sendBill(addInfo, chatId);
                         processingHashMapResponse(responses,chatId);
-                    } catch (CommandNotRecognizedException e) {
-                        send(chatId, "Error in command execution, check the data format");
-                    }
-                    break;
-                case "/change_duration":
-                    try {
-                        send(chatId, serviceTrainer.changeDuration(addInfo));
                     } catch (CommandNotRecognizedException e) {
                         send(chatId, "Error in command execution, check the data format");
                     }

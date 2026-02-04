@@ -9,6 +9,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Comparator;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -50,16 +51,18 @@ public class User {
     @Enumerated (EnumType.STRING)
     Language language;
 
-    @Enumerated (EnumType.STRING)
-    @Column(name="schedule_day")
-    DayOfWeek scheduleDay;
-
-    @Column(name = "schedule_time")
-    LocalTime scheduleTime;
 
     @Column(name="user_site_status")
     @Enumerated(EnumType.STRING)
     UserSiteStatus userSiteStatus;
+
+    @Transient
+    String schedule;
+
+    @Transient
+    List<User> trainers;
+
+
 
 //    String googleAccessToken;
 //    String googleRefreshToken;
@@ -77,22 +80,11 @@ public class User {
         this.userSiteStatus=UserSiteStatus.ACTIVE;
     }
 
-    public String toStringSchedule () {
-        String day = (scheduleDay != null) ? scheduleDay.toString() : "not set";
-        String time = (scheduleTime != null)
-                ? scheduleTime.format(Constant.timeFormatter)
-                : "";
-
-        return "schedule: " + day + " " + time;
-    }
-
     public static Comparator<User> compareById() {
         return Comparator.comparing(User::getId);
     }
 
-    public static Comparator<User> compareBySchedule() {
-        return Comparator
-                .comparing(User::getScheduleDay)
-                .thenComparing(User::getScheduleTime);
+    public Boolean isTrainer() {
+        return (this.getRole().equals(UserRole.TRAINER)||this.getRole().equals(UserRole.ADMIN));
     }
 }

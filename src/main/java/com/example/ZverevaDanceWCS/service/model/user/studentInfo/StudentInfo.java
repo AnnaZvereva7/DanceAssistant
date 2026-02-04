@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.studentInfo;
+package com.example.ZverevaDanceWCS.service.model.user.studentInfo;
 
 import com.example.ZverevaDanceWCS.service.Constant;
 import jakarta.persistence.*;
@@ -25,6 +25,9 @@ public class StudentInfo {
     @Column(name = "student_id", nullable = false)
     int studentId;
 
+    @Column (name="trainer_id", nullable = false)
+    int trainerId;
+
     @Column(name="info_date", nullable = false)
     LocalDate date;
 
@@ -32,7 +35,7 @@ public class StudentInfo {
     @Column(nullable = false)
     InfoStatus status;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     String info;
 
     public static Comparator<StudentInfo> byDate() {

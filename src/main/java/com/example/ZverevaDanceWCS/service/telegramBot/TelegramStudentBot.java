@@ -5,17 +5,14 @@ import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.user.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -77,7 +74,7 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
                 User student = userService.newUserTelegram(chatId, name, chatName);
                 send(Constant.adminChatId, "New user started bot: " + name + " - " + chatName); //todo убрать это информирование в будущем
                 log.info("New user started bot: " + name + " - " + chatName + " id=" + student.getId());
-                send(chatId, telegramStudentService.startCommandRecieveUser(chatId, name));
+                send(chatId, telegramStudentService.startCommandRecieveUser(name));
             }
         }
     }
@@ -85,7 +82,7 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
     private void onUpdateReceivedStudent(String command, String[] addInfo, long chatId, String name) {
         switch (command) {
             case "/start":
-                send(chatId, telegramStudentService.startCommandRecieveUser(chatId, name));
+                send(chatId, telegramStudentService.startCommandRecieveUser(name));
                 break;
             case "/schedule":
                 send(chatId, telegramStudentService.scheduleForStudent(chatId));
@@ -95,26 +92,6 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
                 break;
             case "show_info":
                 send(chatId, telegramStudentService.showInfo(chatId));
-            case "/new_lesson": //new_lesson:01.01.25 09:30 //todo как тут указать учителя? может старт код чтоб содержал id учителя?
-                try {
-                    HashMap<Long, String> responses = telegramStudentService.addLessonByStudent(addInfo, chatId);
-                    for (Map.Entry<Long, String> entry : responses.entrySet()) {
-                        send(entry.getKey(), entry.getValue());
-                    }
-                } catch (RuntimeException e) {
-                    send(chatId, e.getMessage());
-                }
-                break;
-            case "/change_lesson": //change_lesson:01.01.25 to 02.01.01 09:30
-                try {
-                    HashMap<Long, String> responses = telegramStudentService.changeLessonByStudent(addInfo, chatId);
-                    for (Map.Entry<Long, String> entry : responses.entrySet()) {
-                        send(entry.getKey(), entry.getValue());
-                    }
-                } catch (RuntimeException e) {
-                    send(chatId, e.getMessage());
-                }
-                break;
             case "/cancel_lesson": //cancel_lesson:[01.01.25]
                 try {
                     HashMap<Long, String> responses = telegramStudentService.cancelLessonByStudent(addInfo, chatId);

@@ -26,6 +26,9 @@ public class Payment {
     @JoinColumn(name = "student_id", referencedColumnName = "user_id", nullable = false)
     User student;
 
+    @Column (name = "trainer_id", nullable = false)
+    int trainerId;
+
     @Column(name = "date_of_payment", nullable = false)
     LocalDate date;
 

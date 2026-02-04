@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     public Optional<Payment> findById (int id);
     public List<Payment> findByStudentId (int studentId);
-    public List<Payment> findByDateBetween(LocalDate startDate, LocalDate endDate);
+    public List<Payment> findByDateBetweenAndTrainerId(LocalDate startDate, LocalDate endDate, int trainerId);
     public List<Payment> findByStudentIdAndDateBetween(int studentId, LocalDate startDate, LocalDate endDate);
 }

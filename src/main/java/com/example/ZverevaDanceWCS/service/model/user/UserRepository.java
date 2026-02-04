@@ -11,9 +11,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByChatName (String telegramUserName);
     Optional<User> findByChatId (long chatId);
     Optional<User> findById(int id);
-    List<User> findAllByRole(UserRole role);
     List<User> findAll();
-    List<User> findByScheduleDayNotNull();
-    List<User> findAllByRoleIn(List<UserRole> roles);
     Optional<User> findByEmail(String email);
 }

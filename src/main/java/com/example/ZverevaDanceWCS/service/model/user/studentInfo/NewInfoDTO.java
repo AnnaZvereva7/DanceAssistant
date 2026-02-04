@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.studentInfo;
+package com.example.ZverevaDanceWCS.service.model.user.studentInfo;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

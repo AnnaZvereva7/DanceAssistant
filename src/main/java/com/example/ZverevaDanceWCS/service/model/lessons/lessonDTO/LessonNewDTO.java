@@ -30,11 +30,12 @@ public class LessonNewDTO {
     int durationMinutes;
     int cost;
 
-    public Lesson newLessonFromJson(User student) {
+    public Lesson newLessonFromJson(User student, User trainer) {
         Lesson newLesson = new Lesson();
         newLesson.setStudent(student);
         newLesson.setStartTime(this.startTime);
         newLesson.setStatus(LessonStatus.PLANNED);
+        newLesson.setTrainer(trainer);
         if (this.getCost() > 0) {
             newLesson.setCost(this.cost);
         } else {

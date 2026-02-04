@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.studentInfo;
+package com.example.ZverevaDanceWCS.service.model.user.studentInfo;
 
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import org.springframework.stereotype.Service;
@@ -24,8 +24,9 @@ public class InfoService {
         return infoRepository.save(info);
     }
 
-    public StudentInfo saveFromNewInfoDTO(NewInfoDTO infoDto) {
+    public StudentInfo saveFromNewInfoDTO(NewInfoDTO infoDto, int trainerId) {
         StudentInfo info = new StudentInfo();
+        info.setTrainerId(trainerId);
         info.setStudentId(infoDto.studentId);
         info.setInfo(infoDto.info);
         info.setStatus(InfoStatus.ACTUAL);
@@ -53,8 +54,15 @@ public class InfoService {
         return info.stream().map(StudentInfo::toString).collect(Collectors.joining("\n"));
     }
 
-    public HashMap<Integer, String> findAllByStatus(InfoStatus status) {
-        List<StudentInfo> info = infoRepository.findByStatus(status);
+    public String findByStudentAndTrainerActual(int studentId, int trainerId) {
+        List<StudentInfo> info = infoRepository.findByStudentIdAndTrainerIdAndStatus(studentId, trainerId, InfoStatus.ACTUAL);
+        info.sort(StudentInfo.byDate());
+        return info.stream().map(StudentInfo::toString).collect(Collectors.joining("\n"));
+    }
+
+
+    public HashMap<Integer, String> findAllByStatusAndTrainer(InfoStatus status, int trainerId) {
+        List<StudentInfo> info = infoRepository.findByStatusAndTrainerId(status, trainerId);
         HashMap<Integer, List<StudentInfo>> infoMap = new HashMap<>();
         for (StudentInfo i : info) {
             List<StudentInfo> infoList = infoMap.get(i.studentId);

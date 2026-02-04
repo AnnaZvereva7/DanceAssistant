@@ -14,7 +14,7 @@ import java.util.List;
 public class PaymentDTO {
     int studentId;
     String studentName;
-    List<String> completedLessons;
+    List<String> completedLessons; //дата-время (преподаватель) - к оплате
     int balance;
 
     public PaymentDTO toPaymentDTO(User student, List<Lesson> lessons) {

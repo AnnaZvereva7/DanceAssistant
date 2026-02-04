@@ -3,8 +3,8 @@ package com.example.ZverevaDanceWCS.service;
 import java.time.format.DateTimeFormatter;
 
 public class Constant {
-    public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
-    public static final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+    public static final DateTimeFormatter formatterDayTime = DateTimeFormatter.ofPattern("dd.MM.yy HH:mm");
+    public static final DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH:mm");
     public static final DateTimeFormatter formatterTimeFirst=DateTimeFormatter.ofPattern("HH:mm dd.MM");
     public static final DateTimeFormatter formatterJustDate=DateTimeFormatter.ofPattern("dd.MM.yy");
 

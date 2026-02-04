@@ -20,9 +20,14 @@ public class Lesson implements Comparable<Lesson> {
     @Column(name = "lesson_id")
     int id;
 
+
     @ManyToOne
     @JoinColumn(name = "student_id", referencedColumnName = "user_id")
     User student;
+
+    @ManyToOne
+    @JoinColumn(name = "trainer_id", referencedColumnName = "user_id")
+    User trainer;
 
     @Column(name = "date_time", nullable = false)
     LocalDateTime startTime;
@@ -54,8 +59,9 @@ public class Lesson implements Comparable<Lesson> {
     String title;
     //student_event_id
 
-    public Lesson(User student, LocalDateTime startTime, int duration, int cost) {
+    public Lesson(User student, User trainer, LocalDateTime startTime, int duration, int cost) {
         this.student=student;
+        this.trainer=trainer;
         this.startTime=startTime;
         this.durationMin=duration;
         this.endTime = startTime.plusMinutes(durationMin);
@@ -64,8 +70,9 @@ public class Lesson implements Comparable<Lesson> {
         this.cost=cost;
     }
 
-    public Lesson(User student, LocalDateTime startTime, LessonStatus status) {
+    public Lesson(User student,User trainer, LocalDateTime startTime, LessonStatus status) {
         this.student = student;
+        this.trainer=trainer;
         this.startTime = startTime;
         this.durationMin = 60;
         this.endTime = startTime.plusMinutes(durationMin);
@@ -99,14 +106,14 @@ public class Lesson implements Comparable<Lesson> {
         this.endTime=startTime.plusMinutes(durationMin);
         if (this.status==LessonStatus.COMPLETED) {
             this.forPayment=this.cost*this.durationMin/oldDuration;
-        } if (this.status==LessonStatus.PLANNED||this.status==LessonStatus.NEW) {
+        } if (this.status==LessonStatus.PLANNED||this.status==LessonStatus.TO_CONFIRM) {
         if(this.forPayment!=0) {
         this.forPayment=this.cost*this.durationMin/60;}
         }
     }
 
     public String stringForBill() {
-        return this.getStartTime().format(Constant.formatterJustDate) + " - " + this.getForPayment() + " EUR\n";
+        return this.getStartTime().format(Constant.formatterJustDate) + " ("+this.getTrainer().getName()+") - " + this.getForPayment() + " EUR\n";
     }
 
     @Override

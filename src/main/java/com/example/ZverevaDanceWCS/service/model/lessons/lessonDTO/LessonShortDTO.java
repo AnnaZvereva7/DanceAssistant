@@ -18,7 +18,7 @@ public class LessonShortDTO {
         LessonShortDTO dto = new LessonShortDTO();
         dto.id = lesson.getId();
         dto.studentName = lesson.getStudent().getName();
-        dto.startTime = lesson.getStartTime().format(Constant.formatter);
+        dto.startTime = lesson.getStartTime().format(Constant.formatterDayTime);
         return dto;
     }
 }

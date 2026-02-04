@@ -175,9 +175,18 @@
             <label>Plans:
                 <textarea id="studentPlans" rows="6"></textarea>
             </label>
-            <label>Schedule:
-                <textarea id="studentSchedule"></textarea>
-            </label>
+            <div class="schedule-block">
+                <label>Schedule:</label>
+
+                <div id="studentScheduleList" class="schedule-list">
+                    <!-- items rendered by JS -->
+                </div>
+
+                <div class="schedule-add-row">
+                    <input type="text" id="scheduleInput" placeholder="e.g. WEDNESDAY 10:00">
+                    <button id="addScheduleBtn" type="button">Add schedule</button>
+                </div>
+            </div>
             <label>Student Balance:
                 <input type="number" id="studentBalance"> </input>
             </label>
@@ -387,26 +396,152 @@
         }
     }
 
-
+let currentStudentId = null;
     async function loadStudentDetails(id) {
         try {
             const response = await fetch(API_BASE + "/user/" + id);
             const student = await response.json();
             // Здесь выводим данные на страницу
-            document.getElementById("studentName").value = student.name;
-            document.getElementById("studentEmail").value = student.email;
-            document.getElementById("studentId").value = student.id;
-            document.getElementById("studentRole").value = student.role;
-            document.getElementById("studentBalance").value = student.balance;
-            document.getElementById("studentPlans").value = student.plans;
-            document.getElementById("studentSchedule").value = student.schedule;
+            document.getElementById("studentName").value = student.name ?? "";
+            document.getElementById("studentEmail").value = student.email ?? "";
+            document.getElementById("studentId").value = student.id ?? "";
+            document.getElementById("studentRole").value = student.role ?? "";
+            document.getElementById("studentBalance").value = student.balance ?? 0;
+            document.getElementById("studentPlans").value = student.plans ?? "";
+            currentStudentId = student.id;
+
+            renderScheduleBlock(student.scheduleDtos ?? []);
             // Показываем блок с информацией
             document.getElementById("studentDetails").classList.remove("hidden");
         } catch (error) {
             console.error("Error loading student:", error);
+             alert("Failed to load the student data.");
         }
     }
 
+    function renderScheduleBlock(scheduleDtos) {
+        const list = document.getElementById("studentScheduleList");
+        list.innerHTML = "";
+
+        if (!Array.isArray(scheduleDtos) || scheduleDtos.length === 0) {
+            const empty = document.createElement("div");
+            empty.className = "schedule-empty";
+            empty.textContent = "Not set";
+            list.appendChild(empty);
+            return;
+        }
+
+        scheduleDtos.forEach(s => {
+            const row = document.createElement("div");
+            row.className = "schedule-row";
+
+            const text = document.createElement("span");
+            text.textContent = s.dateTime;
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.textContent = "Delete";
+            btn.addEventListener("click", () => deleteSchedule(s.id));
+
+            row.appendChild(text);
+            row.appendChild(btn);
+            list.appendChild(row);
+        });
+    }
+
+    async function refreshScheduleOnly() {
+        if (!currentStudentId) {
+            console.warn("No currentStudentId set, cannot refresh schedule");
+            return;
+        }
+
+        try {
+            const response = await fetch(
+                API_BASE + "/user/" + currentStudentId + "/schedules",
+                { credentials: "same-origin" }
+            );
+
+            if (!response.ok) {
+                console.error("Refresh failed:", response.status, response.statusText);
+                alert("Failed to refresh the schedule.");
+                return;
+            }
+
+            const schedules = await response.json();
+            renderScheduleBlock(schedules);
+
+        } catch (e) {
+            console.error("Refresh schedule error:", e);
+            alert("An error occurred while refreshing the schedule.");
+        }
+    }
+
+        async function deleteSchedule(scheduleId) {
+            const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+            try {
+                const response = await fetch(API_BASE + "/user/schedule_delete/" + scheduleId, {
+                  method: "DELETE",
+                  credentials: "same-origin",
+                  headers: {
+                    "X-XSRF-TOKEN": csrf
+                  }
+                });
+
+                if (!response.ok) {
+                  console.error("Delete schedule failed:", response.status, response.statusText);
+                  alert("Failed to delete the schedule.");
+                  return;
+                }
+                await refreshScheduleOnly();
+
+            } catch (e) {
+                console.error("Delete schedule error:", e);
+                alert("An error occurred while deleting the schedule.");
+            }
+    }
+
+    document.getElementById("addScheduleBtn").addEventListener("click", addSchedule);
+
+    async function addSchedule() {
+      const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+      const input = document.getElementById("scheduleInput");
+      const currentStudentId = document.getElementById("studentId").value;
+      const value = (input.value || "").trim();
+
+      if (!currentStudentId) {
+        alert("Please select a student first.");
+        return;
+      }
+      if (!value) {
+        alert("Please enter a schedule value (e.g. WEDNESDAY 10:00).");
+        return;
+      }
+
+      try {
+        const response = await fetch(API_BASE + "/user/schedule_add/" + currentStudentId, {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-XSRF-TOKEN": csrf
+          },
+          body: JSON.stringify({ dateTime: value })
+        });
+
+        if (!response.ok) {
+          console.error("Add schedule failed:", response.status, response.statusText);
+          alert("Failed to add the schedule.");
+          return;
+        }
+
+        input.value = "";
+        await refreshScheduleOnly();
+      } catch (e) {
+        console.error("Add schedule error:", e);
+        alert("An error occurred while adding the schedule.");
+      }
+    }
 
     async function loadLessonsCompleted() {
         const list = document.getElementById("lessonsListCompleted");
@@ -790,46 +925,49 @@
 
     async function saveChangesStudent() {
     const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
     const id = document.getElementById("studentId").value;
-    let name = document.getElementById("studentName").value;
-    let email = document.getElementById("studentEmail").value;
-    let role = document.getElementById("studentRole").value;
-    let schedule = document.getElementById("studentSchedule").value;
     if (!id) {
-        alert("Сначала выберите ученика");
+        alert("Please select a student first.");
         return;
     }
-     const studentData = {
+
+    const name = document.getElementById("studentName").value;
+    const email = document.getElementById("studentEmail").value;
+    const role = document.getElementById("studentRole").value;
+
+    const studentData = {
         studentId: Number(id),
         name: name,
         email: email,
-        role: role,
-        schedule: schedule
+        role: role
     };
+
     console.log("studentData:", studentData);
+
     try {
         const response = await fetch(API_BASE + "/user/change", {
             method: "PUT",
-             credentials: "same-origin",
-             headers: {
+            credentials: "same-origin",
+            headers: {
                 "Content-Type": "application/json",
                 "X-XSRF-TOKEN": csrf
             },
-            // 2️⃣ Превращаем объект в JSON-строку
             body: JSON.stringify(studentData)
         });
+
         if (!response.ok) {
             console.error("Error:", response.status, response.statusText);
-            alert("Не удалось обновить пользователя");
+            alert("Failed to update the student data.");
             return;
         }
-        alert("Data updated successfully.");
 
-        } catch (error) {
-            console.error("Error:", error);
-            alert("Ошибка при изменении пользователя");
-        }
+        alert("Student data updated successfully.");
+    } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred while updating the student data.");
     }
+}
 
 
     function getCookie(name) {

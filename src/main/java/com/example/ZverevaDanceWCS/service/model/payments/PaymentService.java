@@ -23,9 +23,10 @@ public class PaymentService {
         this.userService = userService;
     }
 
-    public Payment saveNew(User student, int sum, LocalDate date) throws RuntimeException {
+    public Payment saveNew(User student, int trainerId, int sum, LocalDate date) throws RuntimeException {
         Payment newPayment = new Payment();
         newPayment.setStudent(student);
+        newPayment.setTrainerId(trainerId);
         newPayment.setSum(sum);
         newPayment.setDate(date);
         return paymentRepository.save(newPayment);
@@ -47,16 +48,16 @@ public class PaymentService {
         return paymentRepository.findByStudentId(studentId);
     }
 
-    public List<Payment> findByYear (int year) {
+    public List<Payment> findByYearAndTrainerId(int year, int trainerId) {
         LocalDate startDate = LocalDate.of(year, 1,1);
         LocalDate endDate= LocalDate.of(year, 12,31);
-        return paymentRepository.findByDateBetween(startDate, endDate);
+        return paymentRepository.findByDateBetweenAndTrainerId(startDate, endDate, trainerId);
     }
 
-    public List<Payment> findByMonthAndYear(int month, int year) {
+    public List<Payment> findByMonthAndYearAndTrainerId(int month, int year, int trainerId) {
         LocalDate startDate = LocalDate.of(year, month,1);
         LocalDate endDate= startDate.with(TemporalAdjusters.lastDayOfMonth());
-        return paymentRepository.findByDateBetween(startDate, endDate);
+        return paymentRepository.findByDateBetweenAndTrainerId(startDate, endDate, trainerId);
     }
 
     public List<Payment> findByStudentAndPeriod(int studentId, LocalDate startDate, LocalDate endDate) {

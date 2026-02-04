@@ -25,7 +25,7 @@ public class LessonFullDTO {
         dto.id = lesson.getId();
         dto.studentName = lesson.getStudent().getName();
         dto.studentId=lesson.getStudent().getId();
-        dto.startTime = lesson.getStartTime().format(com.example.ZverevaDanceWCS.service.Constant.formatter);
+        dto.startTime = lesson.getStartTime().format(com.example.ZverevaDanceWCS.service.Constant.formatterDayTime);
         dto.status = lesson.getStatus();
         dto.cost = lesson.getCost();
         dto.forPayment = lesson.getForPayment();

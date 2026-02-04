@@ -8,8 +8,6 @@ import com.example.ZverevaDanceWCS.service.model.user.Messenger;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -43,7 +41,7 @@ public class TelegramScheduledBot {
         for (Lesson lesson : lessons) {
             User student = lesson.getStudent();
             if (student.getMessenger() == Messenger.TELEGRAM) {
-                studentBot.send(student.getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.formatter));
+                studentBot.send(student.getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.formatterDayTime));
                 log.info("Отправлено уведомление о занятии " + student.getName());
             }
         }

@@ -2,17 +2,16 @@ package com.example.ZverevaDanceWCS.service.controller;
 
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
-import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonFullDTO;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
-import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDTO;
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
 import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
 import com.example.ZverevaDanceWCS.service.model.payments.TransactionDataDao;
-import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByAdminDto;
+import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
+import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
+import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.PastOrPresent;
@@ -35,11 +34,13 @@ public class UserController {
     final LessonService lessonService;
     final UserService userService;
     final PaymentService paymentService;
+    final ScheduleService scheduleService;
 
-    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService) {
+    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService, ScheduleService scheduleService) {
         this.lessonService = lessonService;
         this.userService = userService;
         this.paymentService = paymentService;
+        this.scheduleService = scheduleService;
     }
 
     //User endpoint, update details
@@ -65,11 +66,15 @@ public class UserController {
     @GetMapping("/my_info")
     public UserUpdateByUserDto getUserDetails(HttpSession session) {
         int userId = (int) session.getAttribute("USER_ID");
-        return UserUpdateByUserDto.fromUser(userService.findByIdWithInfo(userId));
+        List<ScheduleShortDTO> schedules=scheduleService.findByStudent(userId)
+                .stream()
+                .map(Schedule::toShortDto)
+                .toList();
+        return UserUpdateByUserDto.fromUser(userService.findByIdWithInfo(userId), schedules);
     }
 
     @GetMapping("/to_pay")
-    public PaymentDTO toPay(HttpSession session) {
+    public PaymentDTO toPay(HttpSession session) { //todo сделать список по разным преподавателям
         int userId = (int) session.getAttribute("USER_ID");
         return lessonService.findBalanceByStudentId(userId);
     }
