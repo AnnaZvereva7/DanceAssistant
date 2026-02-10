@@ -246,6 +246,7 @@
         <button id="loadScheduleBtn" class="tab-btn">Schedule</button>
         <button id="loadUserInfoBtn" class="tab-btn">MyInfo</button>
         <button id="loadPaymentBtn" class="tab-btn">Payments</button>
+        <button id="loadCalendar" class="tab-btn">Calendar</button>
         <button id="musicServiceBtn" class="tab-btn">Music</button>
     </div>
 
@@ -270,7 +271,7 @@
                 <label>Birthday:
                     <input type="date" id="studentBirthday">
                 </label>
-                <label>Plans:
+                <label>Additional info:
                     <textarea id="studentPlans" rows="6"></textarea>
                 </label>
                 <label>Schedule:
@@ -321,10 +322,7 @@
                 <button id="loadLessonsPaymentBtn" class="secondary-btn">Load Operations</button>
             </div>
 
-            <div id="monthLessonPaymentDetails" class="tab visible" style="display:none; margin-top:14px;">
-                <h3>Lessons and Payment in selected month</h3>
-                <textarea id="monthDetails" rows="10"></textarea>
-            </div>
+            <div id="monthDetails"></div>
         </div>
 
         <div id="musicTab" class="tab">
@@ -385,6 +383,10 @@
     buttons.music.addEventListener("click", async () => {
       showTab("music");
       // тут можешь вызвать loadMusic() если будет
+    });
+
+    document.getElementById("loadCalendar").addEventListener("click", () => {
+    window.location.href = "calendar.html";
     });
 
     document.getElementById("newLessonBtn").addEventListener("click", addNewLesson);
@@ -507,29 +509,34 @@
 }
 
 // ---------- Payment: month details ----------
-async function loadMonthLessonsPaymentDetails() {
-  const month = document.getElementById("monthOfPayment").value;
-  const year = document.getElementById("yearOfPayment").value;
+    async function loadMonthLessonsPaymentDetails() {
+      const month = document.getElementById("monthOfPayment").value;
+      const year = document.getElementById("yearOfPayment").value;
 
-  try {
-    const response = await fetch(
-      `${API_BASE}/month_details?month=${month}&year=${year}`
-    );
+      try {
+        const response = await fetch(
+          API_BASE+'/month_details/'+month+'/'+year
+        );
 
-    if (!response.ok) {
-      throw new Error("Failed to load month details");
+        if (!response.ok) {
+          throw new Error("Failed to load month details");
+        }
+
+        const monthDetails = await response.json();
+
+        const container = document.getElementById("monthDetails");
+        container.innerHTML = "";
+        monthDetails.forEach(item => {
+          const row = document.createElement("div");
+          row.textContent = `${item.date} - ${item.type} : ${item.amount}`;
+          container.appendChild(row);
+        });
+
+      } catch (error) {
+        console.error("Error loading month lessons and payment details:", error);
+        alert("Error loading month details");
+      }
     }
-
-    const monthDetails = await response.json();
-
-    document.getElementById("monthDetails").value =
-      JSON.stringify(monthDetails, null, 2);
-
-  } catch (error) {
-    console.error("Error loading month lessons and payment details:", error);
-    alert("Error loading month details");
-  }
-}
 
     function getCookie(name) {
       const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
@@ -550,8 +557,7 @@ async function loadMonthLessonsPaymentDetails() {
     loadMe();
     loadSchedule();
 
-    // заглушки (если у тебя нет пока этих функций, чтобы не падало)
-    function addNewLesson(){ /* TODO */ }
+    function addNewLesson(){ window.location.href = "calendar.html?openAddLesson=true"; }
 </script>
 
 </body>

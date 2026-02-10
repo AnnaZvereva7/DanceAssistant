@@ -21,7 +21,7 @@ public class TransactionDataDao {
         TransactionDataDao dao = new TransactionDataDao();
         dao.date = lesson.getStartTime().toLocalDate();
         dao.type = TransactionType.LESSON;
-        dao.amount = lesson.getForPayment();
+        dao.amount = -lesson.getCost();
         return dao;
     }
 

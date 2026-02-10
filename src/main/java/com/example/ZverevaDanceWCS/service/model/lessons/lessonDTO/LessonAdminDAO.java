@@ -14,7 +14,7 @@ public class LessonAdminDAO { //09.30 22.04.25 - Anna - status:PLANNED (lesson_i
     String studentName;
     LocalDateTime dateTime;
     LessonStatus status;
-    int id;
+    Long id;
 
     public LessonAdminDAO(Lesson lesson) {
         this.studentName = lesson.getStudent().getName();

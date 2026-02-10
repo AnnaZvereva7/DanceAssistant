@@ -136,6 +136,9 @@
 <button id="loadStudentsBtn">Students</button>
 <button id="loadLessonsBtn">Lessons</button>
 <button id="loadPaymentBtn">Payments</button>
+<a href="calendar.html">
+    <button>Calendar</button>
+</a>
 <button id="musicServiceBtn">Music</button>
 
 <div class="container">
@@ -200,6 +203,10 @@
                 <label>Start Time(01.01.2026 10:00):
                     <input type="text" id="newLessonStartTime">
                 </label>
+                <select id="newLessonStatus">
+                    <option value="PENDING_STUDENT_CONFIRMATION">TO_CONFIRM</option>
+                    <option value="PLANNED">PLANNED</option>
+                </select>
                 <label>Duration (minutes):
                     <input type="number" id="newLessonDuration">
                 </label>
@@ -780,6 +787,7 @@ let currentStudentId = null;
     const id = document.getElementById("studentId").value;
     let startTime = document.getElementById("newLessonStartTime").value;
     let cost = parseInt(document.getElementById("newLessonCost").value);
+    let status = document.getElementById("newLessonStatus").value;
     let duration = parseInt(document.getElementById("newLessonDuration").value);
     if (!id) {
         alert("Сначала выберите ученика");
@@ -788,6 +796,7 @@ let currentStudentId = null;
      const lessonData = {
         studentId: Number(id),
         startTime: startTime,
+        status: status,
         durationMin: duration,
         cost: cost
     };

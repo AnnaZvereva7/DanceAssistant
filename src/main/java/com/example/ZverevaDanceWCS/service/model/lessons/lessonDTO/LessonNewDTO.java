@@ -27,6 +27,9 @@ public class LessonNewDTO {
     @Future
     LocalDateTime startTime;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    LessonStatus status;
+
     int durationMinutes;
     int cost;
 
@@ -34,7 +37,7 @@ public class LessonNewDTO {
         Lesson newLesson = new Lesson();
         newLesson.setStudent(student);
         newLesson.setStartTime(this.startTime);
-        newLesson.setStatus(LessonStatus.PLANNED);
+        newLesson.setStatus(this.status);
         newLesson.setTrainer(trainer);
         if (this.getCost() > 0) {
             newLesson.setCost(this.cost);

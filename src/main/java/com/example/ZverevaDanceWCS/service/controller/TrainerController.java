@@ -1,6 +1,7 @@
 package com.example.ZverevaDanceWCS.service.controller;
 
 import com.example.ZverevaDanceWCS.service.Constant;
+import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventService;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
@@ -25,12 +26,12 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,14 +47,17 @@ public class TrainerController {
     final PaymentService paymentService;
     final InfoService infoService;
     final ScheduleService scheduleService;
+    final CalendarEventService calendarEventService;
 
-    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramStudentBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService) {
+
+    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramStudentBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
         this.paymentService = paymentService;
         this.infoService = infoService;
         this.scheduleService = scheduleService;
+        this.calendarEventService = calendarEventService;
     }
 
     // Admin endpoints, user details by id
@@ -202,7 +206,7 @@ public class TrainerController {
     }
 
     @GetMapping("/lesson/{id}")
-    public LessonFullDTO getLessonById(@PathVariable int id) {
+    public LessonFullDTO getLessonById(@PathVariable Long id) {
         return LessonFullDTO.toFullDTO(lessonService.findById(id));
     }
 
@@ -218,13 +222,13 @@ public class TrainerController {
     @GetMapping("/lessons/planned")
     public List<LessonShortDTO> getLessonsPlanned(HttpSession session) {
         User trainer = findTrainerFromSession(session);
-        return lessonService.findByStatusInAndTrainerId(List.of(LessonStatus.PLANNED, LessonStatus.TO_CONFIRM), trainer.getId())
+        return lessonService.findByStatusInAndTrainerId(List.of(LessonStatus.PLANNED, LessonStatus.PENDING_STUDENT_CONFIRMATION, LessonStatus.PENDING_TRAINER_CONFIRMATION), trainer.getId())
                 .stream().map(LessonShortDTO::toShortDTO).toList();
     }
 
     // Admin endpoint, mark lesson as completed
     @PutMapping("/lesson/completed/{id}")
-    public LessonFullDTO markLessonAsCompleted(@PathVariable int id) {
+    public LessonFullDTO markLessonAsCompleted(@PathVariable Long id) {
         return LessonFullDTO.toFullDTO(lessonService.lessonCompleted(lessonService.findById(id)));
     }
 
@@ -242,7 +246,7 @@ public class TrainerController {
 
     // Admin endpoint, mark lesson as canceled
     @PutMapping("/lesson/canceled/{id}")
-    public LessonFullDTO markLessonAsCanceled(@PathVariable int id) {
+    public LessonFullDTO markLessonAsCanceled(@PathVariable Long id) {
         return LessonFullDTO.toFullDTO(lessonService.cancelLesson(lessonService.findById(id)));
     }
 
@@ -250,10 +254,9 @@ public class TrainerController {
     @PutMapping("/lesson/change")
     public LessonFullDTO changeLesson(@Valid @RequestBody LessonUpdateDto lessonUpdateDto) {
         Lesson lessonToUpdate = lessonService.findById(lessonUpdateDto.getLessonId());
-        lessonToUpdate.setStartTime(lessonUpdateDto.getStartTime());
-        lessonToUpdate.setDurationMin(lessonUpdateDto.getDurationInMinutes());
+        LocalDateTime newEndTime = lessonUpdateDto.getStartTime().plusMinutes(lessonUpdateDto.getDurationInMinutes());
         lessonToUpdate.setCost(lessonUpdateDto.getCost());
-        Lesson updatedLesson = lessonService.updateLesson(lessonToUpdate);
+        Lesson updatedLesson =calendarEventService.changeLessonTime(lessonUpdateDto.getStartTime(), newEndTime, lessonToUpdate);
         return LessonFullDTO.toFullDTO(updatedLesson);
     }
 

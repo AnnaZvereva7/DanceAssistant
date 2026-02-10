@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Calendar</title>
+
+    <!-- FullCalendar Global Bundle (creates window.FullCalendar) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <style>
+        body { margin: 20px; font-family: Arial, sans-serif; }
+        #calendar { max-width: 1100px; margin: 0 auto; }
+
+        .legend {
+          max-width: 1100px;
+          margin: 0 auto 12px auto;
+          padding: 10px 12px;
+          border: 1px solid #ddd;
+          border-radius: 12px;
+          background: #fafafa;
+          font-size: 14px;
+          display: flex;
+          gap: 14px;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .chips { display:flex; gap:10px; flex-wrap: wrap; align-items:center; }
+        .chip { display:flex; align-items:center; gap:8px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); }
+
+        button {
+          padding: 8px 12px;
+          border: 1px solid #bbb;
+          background: white;
+          border-radius: 10px;
+          cursor: pointer;
+        }
+
+        select {
+          padding: 8px 10px;
+          border: 1px solid #bbb;
+          border-radius: 10px;
+          background: #fff;
+        }
+
+        .actionRow { display:flex; gap:10px; flex-wrap: wrap; margin-top: 10px; align-items:center; }
+        .smallNote { color:#666; font-size: 13px; margin-top: 6px; line-height: 1.3; }
+
+        /* Make title and time black */
+        .fc-timegrid-event .fc-event-main { color: #000 !important; }
+        .fc-timegrid-event .fc-event-time { color: #000 !important; }
+        .fc-timegrid-event .fc-event-title { color: #000 !important; }
+
+        /* Status colors */
+        .fc-event.free-event { background:#b3ffb3 !important; border-color:#80ff80 !important; }
+        .fc-event.booked-event { background:#b3d9ff !important; border-color:#80c1ff !important; }
+        .fc-event.pending-student-confirmation-event { background:#ffe0a3 !important; border-color:#ffd27a !important; }
+        .fc-event.pending-trainer-confirmation-event { background:#f5c16c !important; border-color:#e3a93f !important; }
+
+
+        #errBox {
+          max-width: 1100px;
+          margin: 0 auto 10px auto;
+          padding: 10px 12px;
+          border: 1px solid #f3c7c7;
+          border-radius: 12px;
+          background: #fff3f3;
+          color: #7a1e1e;
+          display:none;
+          white-space: pre-wrap;
+        }
+
+        /* Modal */
+        #modal {
+          display:none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,.35);
+          padding: 24px;
+          z-index: 9999;
+          overflow: auto;
+        }
+        #modalCard {
+          max-width: 1100px;
+          margin: 0 auto;
+          background: #fff;
+          border-radius: 14px;
+          padding: 14px;
+          box-shadow: 0 8px 30px rgba(0,0,0,.2);
+        }
+    </style>
+</head>
+
+<body>
+<div class="legend">
+    <div id="modeText">Calendar</div>
+    <div class="chips">
+        <div class="chip"><span class="dot" style="background:#b3ffb3;"></span> FREE</div>
+        <div class="chip"><span class="dot" style="background:#b3d9ff;"></span> BOOKED</div>
+        <div class="chip"><span class="dot" style="background:#ffe0a3;"></span> PENDING_CONFIRMATION</div>
+    </div>
+    <div style="display:flex; gap:10px;">
+        <button id="btnReload" type="button">Обновить</button>
+        <button id="btnToMain" type="button">To main page</button>
+    </div>
+</div>
+
+<div class="legend" id="studentActions" style="display:none;">
+    <div>Действия ученика</div>
+    <div>
+        <button id="btnAddLesson" type="button">Добавить урок</button>
+    </div>
+</div>
+
+<div id="errBox"></div>
+<div id="calendar"></div>
+
+<div id="modal">
+    <div id="modalCard">
+        <div style="display:flex; justify-content: space-between; align-items:center; gap:10px;">
+            <div id="modalTitle" style="font-weight: 600;">Модалка</div>
+            <button id="btnModalClose" type="button">Закрыть</button>
+        </div>
+        <div id="modalBody" style="margin-top: 12px;"></div>
+    </div>
+</div>
+
+<script>
+    // --- Helpers ---
+    const errBox = document.getElementById('errBox');
+    function showError(msg) { errBox.style.display = 'block'; errBox.textContent = msg; }
+    function clearError() { errBox.style.display = 'none'; errBox.textContent = ''; }
+
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    }
+
+    function csrfHeaders() {
+      // Spring CookieCsrfTokenRepository default: cookie XSRF-TOKEN, header X-XSRF-TOKEN
+      const token = getCookie('XSRF-TOKEN');
+      return token ? { 'X-XSRF-TOKEN': token } : {};
+    }
+
+    async function fetchText(url, opts = {}) {
+      const res = await fetch(url, { credentials: 'same-origin', ...opts });
+      const text = await res.text().catch(() => '');
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}\n${text.slice(0, 700)}`);
+      return text;
+    }
+
+    async function fetchJson(url, opts = {}) {
+      const text = await fetchText(url, opts);
+      // 204 already handled in fetchText via ok check; but for safety:
+      if (!text) return null;
+      const ct = (opts._contentTypeOverride) || '';
+      // try parse anyway
+      try { return JSON.parse(text); } catch { return null; }
+    }
+
+    function toIsoLocal(dateObj) {
+      const pad = (n) => String(n).padStart(2, '0');
+      const y = dateObj.getFullYear();
+      const m = pad(dateObj.getMonth() + 1);
+      const d = pad(dateObj.getDate());
+      const hh = pad(dateObj.getHours());
+      const mm = pad(dateObj.getMinutes());
+      const ss = pad(dateObj.getSeconds());
+      return `${y}-${m}-${d}T${hh}:${mm}:${ss}`;
+    }
+
+    function formatTimeHHMM(date) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function normalizeStatus(s) {
+      if (!s) return null;
+      s = String(s).toUpperCase();
+      return s;
+    }
+
+    function classByStatus(status) {
+      if (status === 'FREE') return 'free-event';
+      if (status === 'BOOKED') return 'booked-event';
+      if (status === 'PENDING_TRAINER_CONFIRMATION') return 'pending-trainer-confirmation-event';
+      if (status === 'PENDING_STUDENT_CONFIRMATION') return 'pending-student-confirmation-event';
+      return '';
+    }
+
+    // --- Modal ---
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    document.getElementById('btnModalClose').addEventListener('click', hideModal);
+
+    function showModal(title, html) {
+      modalTitle.textContent = title;
+      modalBody.innerHTML = html;
+      modal.style.display = 'block';
+    }
+    function hideModal() {
+      modal.style.display = 'none';
+      modalBody.innerHTML = '';
+    }
+
+    // --- Mode detection --- через запрос к серверу определяет кто на сайте, возвращает json в виде строки
+    async function detectMode() {
+        try {
+            const data = await fetchJson('/calendar/role');
+
+            // если сервер возвращает просто строку "TRAINER"
+            const raw = (typeof data === 'string') ? data : data?.status || data?.role || data?.userSiteStatus;
+
+            if (!raw) {
+              throw new Error('Invalid response from /calendar/role (no status/role).');
+            }
+
+            const status = String(raw).toUpperCase();
+
+            // ADMIN и TRAINER — это “тренерский интерфейс”
+            if (status === 'ADMIN' || status === 'TRAINER') {
+              return 'TRAINER';
+            }
+
+            // ACTIVE — это “ученик”
+            if (status === 'ACTIVE') {
+              return 'USER';
+            }
+
+            // todo добавить модуль для неавторизованных пользователей
+            if (status === 'UNAUTHORIZED') {
+              return 'UNAUTHORIZED';
+            }
+            // Явные запреты
+            if (status === 'BLOCKED') {
+              throw new Error('BLOCKED (access denied).');
+            }
+
+            throw new Error('Unknown UserSiteStatus: ' + status);
+        } catch (err) {
+            throw new Error('Failed to detect role via /calendar/role:\n' + err.message);
+        }
+    }
+
+    // --- API wrappers ---
+    async function trainerDeleteFreeSlot(slotId) {
+      await fetchText(`/calendar/delete_slot/${encodeURIComponent(slotId)}`, {
+        method: 'DELETE',
+        headers: { ...csrfHeaders() }
+      });
+    }
+
+    async function trainerAddFreeSlot(eventDto) {
+      await fetchText('/calendar/addFreeSlots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        body: JSON.stringify(eventDto)
+      });
+    }
+
+    async function studentConfirmLesson(lessonId) {
+      await fetchText(`/calendar/user/confirm_lesson/${encodeURIComponent(lessonId)}`, {
+        method: 'PUT',
+        headers: { ...csrfHeaders() }
+      });
+    }
+
+    async function trainerConfirmLesson(lessonId) {
+      await fetchText(`/calendar/confirm_lesson/${encodeURIComponent(lessonId)}`, {
+        method: 'PUT',
+        headers: { ...csrfHeaders() }
+      });
+    }
+
+
+    async function studentDeleteLesson(lessonId) {
+      await fetchText(`/calendar/user/delete_lesson/${encodeURIComponent(lessonId)}`, {
+        method: 'DELETE',
+        headers: { ...csrfHeaders() }
+      });
+    }
+
+    async function trainerDeleteLesson(lessonId) {
+      await fetchText(`/calendar/delete_lesson/${encodeURIComponent(lessonId)}`, {
+        method: 'DELETE',
+        headers: { ...csrfHeaders() }
+      });
+    }
+
+    async function studentChangeLesson(lessonId, lessonTimeRequest) {
+      await fetchText(`/calendar/user/change_lesson/${encodeURIComponent(lessonId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        body: JSON.stringify(lessonTimeRequest)
+      });
+    }
+
+    async function studentGetTrainers() {
+      // expected: [{id, name}, ...]
+      return await fetchJson('/calendar/user/get_trainers');
+    }
+
+    async function studentGetFreeSlots(trainerId) {
+      return await fetchJson(`/calendar/user/get_free_slots/${encodeURIComponent(trainerId)}`);
+    }
+
+    async function studentNewLesson(trainerId, lessonTimeRequest) {
+      await fetchText(`/calendar/user/new_lesson/${encodeURIComponent(trainerId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        body: JSON.stringify(lessonTimeRequest)
+      });
+    }
+
+    // --- UI: choose time inside a FREE slot (LessonTimeRequest) ---
+    function openTimePickerInFreeSlot({ trainerId, slotStart, slotEnd, onPick }) {
+      const durations = [60, 90]; // minutes
+      const durationOptions = durations.map(m => `<option value="${m}">${m} мин</option>`).join('');
+
+      showModal(
+        'Chose lesson time',
+        `
+          <div><b>Free slot:</b></div>
+          <div class="smallNote">${slotStart.toLocaleString()} — ${slotEnd.toLocaleString()}</div>
+
+          <div class="actionRow">
+            <label>Duration:</label>
+            <select id="durationSelect">${durationOptions}</select>
+          </div>
+
+          <div class="actionRow">
+            <label>Start time:</label>
+            <select id="startSelect"></select>
+          </div>
+
+          <div class="actionRow">
+            <button id="btnPickTime" type="button">Choose</button>
+          </div>
+
+          <div class="smallNote">Начало предлагается с шагом 30 минут. Можно поменять на 15 минут в коде.</div>
+        `
+      );
+
+      const durationSelect = document.getElementById('durationSelect');
+      const startSelect = document.getElementById('startSelect');
+
+      function buildStartOptions() {
+        const durationMin = parseInt(durationSelect.value, 10);
+        const stepMin = 30;
+
+        const latestStartMs = slotEnd.getTime() - durationMin * 60000;
+        const options = [];
+        for (let t = new Date(slotStart); t.getTime() <= latestStartMs; t = new Date(t.getTime() + stepMin * 60000)) {
+          const label = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          options.push(`<option value="${t.toISOString()}">${label}</option>`);
+        }
+        startSelect.innerHTML = options.length ? options.join('') : `<option disabled>Нет доступных вариантов</option>`;
+      }
+
+      durationSelect.addEventListener('change', buildStartOptions);
+      buildStartOptions();
+
+      document.getElementById('btnPickTime').addEventListener('click', () => {
+        if (!startSelect.value) return;
+        const durationMin = parseInt(durationSelect.value, 10);
+        const start = new Date(startSelect.value);
+        const end = new Date(start.getTime() + durationMin * 60000);
+
+        const req = {
+          start: toIsoLocal(start),
+          end: toIsoLocal(end)
+        };
+
+        onPick(req);
+        hideModal();
+      });
+    }
+
+    // --- UI: calendar with free slots; click slot -> pick time -> callback(LessonTimeRequest) ---
+    async function openFreeSlotsCalendar({ trainerId, title, onPick }) {
+      clearError();
+      const freeSlots = await studentGetFreeSlots(trainerId);
+
+      const normalized = (freeSlots || []).map(ev => {
+        ev.extendedProps = ev.extendedProps || {};
+        ev.extendedProps.status = normalizeStatus(ev.extendedProps.status);
+        return ev;
+      }).filter(ev => ev.extendedProps.status === 'FREE');
+
+      showModal(
+        title,
+        `
+          <div class="smallNote">Кликни по свободному слоту, затем выбери длительность и точное время.</div>
+          <div id="freeCal" style="margin-top: 10px;"></div>
+        `
+      );
+
+      const freeCal = new FullCalendar.Calendar(document.getElementById('freeCal'), {
+        initialView: 'timeGridWeek',
+        locale: 'en',
+        firstDay: 1,
+        allDaySlot: false,
+        nowIndicator: true,
+        height: 'auto',
+        slotMinTime: '08:00:00',
+        slotMaxTime: '22:00:00',
+        events: normalized,
+        eventClassNames: (arg) => {
+          const st = normalizeStatus(arg.event.extendedProps?.status);
+          const cls = classByStatus(st);
+          return cls ? [cls] : [];
+        },
+        eventClick: function(info) {
+          const st = normalizeStatus(info.event.extendedProps?.status);
+          if (st !== 'FREE') return;
+
+          openTimePickerInFreeSlot({
+            trainerId,
+            slotStart: info.event.start,
+            slotEnd: info.event.end,
+            onPick
+          });
+        }
+      });
+
+      freeCal.render();
+    }
+
+    // --- UI: Add lesson flow (student) ---
+    async function openAddLessonFlow(calendar) {
+      const trainers = await studentGetTrainers();
+      const list = (trainers || []).map(t => {
+        const name = t.name ?? t.fullName ?? t.email ?? ('Trainer #' + t.id);
+        return `<option value="${t.id}">${name}</option>`;
+      }).join('');
+
+      showModal(
+        'Добавить урок: выбери тренера',
+        `
+          <div class="actionRow">
+            <select id="trainerSelect">
+              <option value="" disabled selected>— выбрать —</option>
+              ${list}
+            </select>
+            <button id="btnNext" type="button">Далее</button>
+          </div>
+          <div class="smallNote">После выбора откроется календарь свободных слотов тренера.</div>
+        `
+      );
+
+      document.getElementById('btnNext').addEventListener('click', async () => {
+        const trainerId = document.getElementById('trainerSelect').value;
+        if (!trainerId) return;
+
+        await openFreeSlotsCalendar({
+          trainerId,
+          title: `Свободные слоты тренера #${trainerId}`,
+          onPick: async (lessonTimeRequest) => {
+            await studentNewLesson(trainerId, lessonTimeRequest);
+            calendar.refetchEvents();
+          }
+        });
+      });
+    }
+
+    // --- Main ---
+    document.addEventListener('DOMContentLoaded', async function() {
+      if (!window.FullCalendar) {
+        showError('FullCalendar не загрузился. Проверь Network → index.global.min.js (должен быть 200).');
+        return;
+      }
+
+      const btnToMain = document.getElementById('btnToMain');
+      const modeTextEl = document.getElementById('modeText');
+      const btnReload = document.getElementById('btnReload');
+      const studentActions = document.getElementById('studentActions');
+      const btnAddLesson = document.getElementById('btnAddLesson');
+
+      let mode;
+      try {
+        mode = await detectMode();
+      } catch (e) {
+        showError(e.message);
+        return;
+      }
+
+      const isTrainer = (mode === 'TRAINER');
+      const isStudent = (mode === 'USER');
+      const eventsUrl = isTrainer ? '/calendar' : '/calendar/user';
+
+      if (isTrainer) {
+        modeTextEl.textContent = 'Режим тренера: выделите время мышкой, чтобы добавить FREE слот. Клик по FREE — удалить.';
+        studentActions.style.display = 'none';
+      } else {
+        modeTextEl.textContent = 'Режим ученика: TO_CONFIRM можно подтвердить/отменить. BOOKED можно удалить/перенести. Кнопка «Добавить урок» — выбор тренера и времени.';
+        studentActions.style.display = 'flex';
+      }
+
+      const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'timeGridWeek',
+        locale: 'en',
+        firstDay: 1,
+        allDaySlot: false,
+        nowIndicator: true,
+        height: 'auto',
+        slotMinTime: '08:00:00',
+        slotMaxTime: '22:00:00',
+
+        selectable: isTrainer,
+        selectMirror: true,
+
+        events: async function(info, successCallback, failureCallback) {
+          clearError();
+          try {
+            const data = await fetchJson(eventsUrl);
+            const events = (data || []).map(ev => {
+              ev.extendedProps = ev.extendedProps || {};
+              ev.extendedProps.status = normalizeStatus(ev.extendedProps.status);
+              return ev;
+            });
+
+            successCallback(events);
+          } catch (err) {
+            showError('Ошибка загрузки событий:\n' + err.message);
+            failureCallback(err);
+          }
+        },
+
+        eventClassNames: function(arg) {
+          const st = normalizeStatus(arg.event.extendedProps?.status);
+          const cls = classByStatus(st);
+          return cls ? [cls] : [];
+        },
+
+        // TRAINER: create FREE slot by selecting a range
+        select: async function(selectionInfo) {
+          if (!isTrainer) return;
+
+          const startIso = toIsoLocal(selectionInfo.start);
+          const endIso = toIsoLocal(selectionInfo.end);
+
+          const startUi = formatTimeHHMM(selectionInfo.start);
+          const endUi   = formatTimeHHMM(selectionInfo.end);
+
+          if (!confirm(`Добавить FREE слот?\n${startUi} — ${endUi}`)) {
+            calendar.unselect();
+            return;
+          }
+
+          const timeRequest = {
+            start: startIso,
+            end: endIso,
+          };
+
+          try {
+            await trainerAddFreeSlot(timeRequest);
+            calendar.unselect();
+            calendar.refetchEvents();
+          } catch (err) {
+            showError('Ошибка добавления FREE слота:\n' + err.message);
+            calendar.unselect();
+          }
+        },
+
+        // Click actions
+        eventClick: async function(info) {
+          const ev = info.event;
+          const status = normalizeStatus(ev.extendedProps?.status) || 'UNKNOWN';
+
+          // TRAINER: delete FREE slot
+          if (isTrainer) {
+           const lessonId = ev.id;
+            //урок ожидающий подтверждения тренера надо подтвердить или отменить
+            if (status === 'PENDING_TRAINER_CONFIRMATION') {
+              showModal(
+                  'Урок ожидает подтверждения тренера',
+                  `
+                  <div><b>${ev.title}</b></div>
+                  <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
+                  <div class="actionRow">
+                    <button id="btnConfirm" type="button">Подтвердить</button>
+                    <button id="btnCancel" type="button">Отменить</button>
+                  </div>
+                    `
+              );
+
+              document.getElementById('btnConfirm').addEventListener('click', async () => {
+                  try {
+                    await trainerConfirmLesson(lessonId);
+                    hideModal();
+                    calendar.refetchEvents();
+                  } catch (err) {
+                    showError('Ошибка подтверждения:\n' + err.message);
+                  }
+              });
+
+              document.getElementById('btnCancel').addEventListener('click', async () => {
+                if (!confirm('Отменить урок?')) return;
+                    try {
+                        await trainerDeleteLesson(lessonId);
+                        hideModal();
+                        calendar.refetchEvents();
+                    } catch (err) {
+                        showError('Ошибка отмены:\n' + err.message);
+                    }
+                });
+              return;
+            }
+
+
+            if (status === 'BOOKED' || status === 'PENDING_STUDENT_CONFIRMATION') {
+              alert(`${ev.title}\nСтатус: ${status}`);
+              return;
+            }
+
+            if (status === 'FREE') {
+                const slotId = ev.id;
+                if (!slotId) {
+                  showError('Для удаления слота нужно, чтобы event.id был slotId (строкой).');
+                  return;
+                }
+                if (!confirm('Удалить свободный слот?')) return;
+
+                try {
+                  await trainerDeleteFreeSlot(slotId);
+                  calendar.refetchEvents();
+                } catch (err) {
+                  showError('Ошибка удаления слота:\n' + err.message);
+                }
+                return;
+            }
+          }
+
+          // STUDENT actions
+          if (isStudent) {
+              const lessonId = ev.id;
+              const trainerId = ev.extendedProps?.trainerId;
+
+              if (status === 'PENDING_STUDENT_CONFIRMATION') {
+                showModal(
+                  'Урок ожидает подтверждения',
+                  `
+                    <div><b>${ev.title}</b></div>
+                    <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
+                    <div class="actionRow">
+                      <button id="btnConfirm" type="button">Подтвердить</button>
+                      <button id="btnCancel" type="button">Отменить</button>
+                    </div>
+                  `
+                );
+
+                document.getElementById('btnConfirm').addEventListener('click', async () => {
+                  try {
+                    await studentConfirmLesson(lessonId);
+                    hideModal();
+                    calendar.refetchEvents();
+                  } catch (err) {
+                    showError('Ошибка подтверждения:\n' + err.message);
+                  }
+                });
+
+                document.getElementById('btnCancel').addEventListener('click', async () => {
+                  if (!confirm('Отменить урок?')) return;
+                  try {
+                    await studentDeleteLesson(lessonId);
+                    hideModal();
+                    calendar.refetchEvents();
+                  } catch (err) {
+                    showError('Ошибка отмены:\n' + err.message);
+                  }
+                });
+
+                return;
+              }
+
+              if (status === 'BOOKED'||status === 'PENDING_TRAINER_CONFIRMATION') {
+                showModal(
+                  'Урок забронирован',
+                  `
+                    <div><b>${ev.title}</b></div>
+                    <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
+                    <div class="actionRow">
+                      <button id="btnDelete" type="button">Удалить</button>
+                      <button id="btnMove" type="button">Перенести</button>
+                    </div>
+                    <div class="smallNote">Для переноса выбери новый свободный слот у этого тренера, затем выбери точное время внутри него.</div>
+                  `
+                );
+
+                document.getElementById('btnDelete').addEventListener('click', async () => {
+                  if (!confirm('Удалить урок?')) return;
+                  try {
+                    await studentDeleteLesson(lessonId);
+                    hideModal();
+                    calendar.refetchEvents();
+                  } catch (err) {
+                    showError('Ошибка удаления урока:\n' + err.message);
+                  }
+                });
+
+                document.getElementById('btnMove').addEventListener('click', async () => {
+                  if (!trainerId) {
+                    showError('В событии нет extendedProps.trainerId. Для переноса trainerId обязателен.');
+                    return;
+                  }
+                  try {
+                    await openFreeSlotsCalendar({
+                      trainerId,
+                      title: `Выбери новый свободный слот (тренер #${trainerId})`,
+                      onPick: async (lessonTimeRequest) => {
+                        await studentChangeLesson(lessonId, lessonTimeRequest);
+                        calendar.refetchEvents();
+                      }
+                    });
+                  } catch (err) {
+                    showError('Ошибка переноса:\n' + err.message);
+                  }
+                });
+
+                return;
+              }
+
+              // fallback
+              alert(`${ev.title}\nСтатус: ${status}`);
+          }
+        }
+      });
+
+      calendar.render();
+      btnReload.addEventListener('click', () => calendar.refetchEvents());
+
+      btnToMain.addEventListener('click', () => {
+          if (isTrainer) {
+            window.location.href = 'trainer.html';
+          } else if (isStudent) {
+            window.location.href = 'user.html';
+          } else {
+            // запасной вариант
+            window.location.href = '/';
+          }
+      });
+
+      const params = new URLSearchParams(window.location.search);
+      const openAddLesson = params.get("openAddLesson") === "true";
+
+      if (isStudent) {
+        btnAddLesson.addEventListener('click', async () => {
+          try {
+            await openAddLessonFlow(calendar);
+          } catch (err) {
+            showError('Ошибка добавления урока:\n' + err.message);
+          }
+        });
+        if (openAddLesson) {
+          try {
+            await openAddLessonFlow(calendar);
+          } catch (err) {
+            showError('Ошибка добавления урока:\n' + err.message);
+          }
+        }
+      }
+    });
+</script>
+</body>
+</html>

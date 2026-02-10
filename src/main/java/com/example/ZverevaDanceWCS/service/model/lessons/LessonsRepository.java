@@ -5,11 +5,13 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LessonsRepository extends JpaRepository<Lesson, Long> {
     List<Lesson> findByStudentId(int id);
-    Lesson findById(int id);
+
+    Optional<Lesson> findById(Long id);
 
     List<Lesson> findByStartTimeBetween(LocalDateTime startDate, LocalDateTime endDate);
 
@@ -30,4 +32,5 @@ public interface LessonsRepository extends JpaRepository<Lesson, Long> {
 
     List<Lesson> findByStatusIn(List<LessonStatus> statuses);
     List<Lesson> findByStatusInAndTrainerId(List<LessonStatus> statuses, int trainerId);
+    List<Lesson> findByStatusInAndStudentId(List<LessonStatus> statuses, int trainerId);
 }

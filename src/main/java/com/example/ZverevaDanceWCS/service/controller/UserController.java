@@ -3,7 +3,7 @@ package com.example.ZverevaDanceWCS.service.controller;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
-import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
@@ -14,7 +14,6 @@ import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.PastOrPresent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +28,7 @@ import java.util.stream.Stream;
 @Slf4j
 @RestController
 @RequestMapping("/user")
-@PreAuthorize("hasRole('TRAINER') or hasRole('ADMIN')")
+@PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
 public class UserController {
     final LessonService lessonService;
     final UserService userService;
@@ -52,13 +51,13 @@ public class UserController {
 
     //User and Admin endpoint
     @GetMapping("/schedule")
-    public List<LessonUserDAO> getLessonById(HttpSession session) {
+    public List<LessonUserDTO> getLessonByStudentId(HttpSession session) {
         int userId = (int) session.getAttribute("USER_ID");
         return lessonService.findByStudentAndDateAfter(userId, LocalDateTime.now())
                 .stream()
                 .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
                 .sorted(Comparator.comparing(Lesson::getStartTime))
-                .map(lesson -> new LessonUserDAO(lesson))
+                .map(lesson -> new LessonUserDTO(lesson))
                 .toList();
     }
 
@@ -80,7 +79,7 @@ public class UserController {
     }
 
     @GetMapping("/month_details/{month}/{year}")
-    public List<TransactionDataDao> getPaymentsLessons(@PathVariable String month, @PathVariable @PastOrPresent int year, HttpSession session) {
+    public List<TransactionDataDao> getPaymentsLessons(@PathVariable String month, @PathVariable int year, HttpSession session) {
         int userId = (int) session.getAttribute("USER_ID");
         Month monthEnum = Month.valueOf(month.toUpperCase());
 

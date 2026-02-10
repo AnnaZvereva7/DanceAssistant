@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 public class LessonUpdateDto {
     @NotNull
     @Positive
-    int lessonId;
+    Long lessonId;
     @NotNull
     @JsonFormat(pattern = "dd.MM.yy HH:mm")
     LocalDateTime startTime;

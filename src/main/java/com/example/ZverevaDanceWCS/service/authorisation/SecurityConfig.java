@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/trainer.html").hasAnyRole("TRAINER", "ADMIN")
                         .requestMatchers("/admin.html").hasRole("ADMIN")
                         .requestMatchers("/user.html").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/calendar.html", "/calendar/**").permitAll() //todo может только для зарегистрированных? но скорее смотреть можно без регистрации, а букать с регистрацией
 
                         // API тоже защищаем
                         .requestMatchers("/api/**").authenticated()

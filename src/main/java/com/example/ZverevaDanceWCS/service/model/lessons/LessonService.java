@@ -1,15 +1,20 @@
 package com.example.ZverevaDanceWCS.service.model.lessons;
 
 import com.example.ZverevaDanceWCS.service.calendar.GoogleCalendarService;
+import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventService;
 import com.example.ZverevaDanceWCS.service.model.exception.ExceptionForAdmin;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
+import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeExeption;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
+import com.example.ZverevaDanceWCS.service.model.freeSlots.*;
+import com.example.ZverevaDanceWCS.service.model.calendarEvent.TimeRequest;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserRole;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -28,12 +33,17 @@ public class LessonService {
     private final GoogleCalendarService calendarService;
     private final UserService userService;
     private final TrainerStudentService trainerStudentService;
+    private final FreeSlotService slotService;
 
-    public LessonService(LessonsRepository lessonsRepository, GoogleCalendarService calendarService, UserService userService, TrainerStudentService trainerStudentService) {
+
+    public LessonService(LessonsRepository lessonsRepository, GoogleCalendarService calendarService, UserService userService,
+                         TrainerStudentService trainerStudentService, FreeSlotService slotService) {
         this.lessonsRepository = lessonsRepository;
         this.calendarService = calendarService;
         this.userService = userService;
         this.trainerStudentService = trainerStudentService;
+        this.slotService = slotService;
+
     }
 
     public List<Lesson> findByStatusAndTrainerId(LessonStatus status, int trainerId) {
@@ -43,8 +53,12 @@ public class LessonService {
                 .collect(Collectors.toList());
     }
 
-    public Lesson findById(int id) {
-        return lessonsRepository.findById(id);
+    public Lesson findById(Long id) {
+        if(lessonsRepository.findById(id).isPresent()) {
+            return lessonsRepository.findById(id).get();
+        } else {
+            throw new NotFoundException("Lesson with id =" +id+ " not found.");
+        }
     }
 
     //todo баланс должен быть тоже разделен по преподавателям, а не общий по ученику
@@ -77,18 +91,24 @@ public class LessonService {
     public List<Lesson> findByStatusAndStudentId(LessonStatus status, int id) {
         return lessonsRepository.findByStatusAndStudentId(status, id);
     }
+
+    public List<Lesson> findByStatusInAndStudentId(List<LessonStatus> statuses, int id) {
+        return lessonsRepository.findByStatusInAndStudentId(statuses, id);
+    }
+
     public List<Lesson> findByStatusAndStudentIdAndTrainerId(LessonStatus status, int studentId, int trainerId) {
         return lessonsRepository.findByStatusAndStudentIdAndTrainerId(status, studentId, trainerId);
     }
 
-    @Transactional
-    public Lesson saveNewLesson(Lesson lesson) { //todo не создаются урокаи после ошибки с датой раньше now только для учеников
+    @Transactional  //todo не создаются урокаи после ошибки с датой раньше now только для учеников
+    public Lesson saveNewLesson(Lesson lesson) { //урок сохраняется в базу, сохраняется связб учитель-тренер в базу, удаляется free слот если был, создается гугл событие
         Lesson newLesson = lessonsRepository.save(lesson);
+        lesson.setId(newLesson.getId());
         trainerStudentService.saveLink(newLesson.getTrainer(), newLesson.getStudent());
-        newLesson.setTitle(newLesson.getTitle() + " (id=" + lesson.getId() + ")");
+        lesson.setTitle(newLesson.getTitle() + " (id=" + lesson.getId() + ")");
+        slotService.bookPartOfFreeSlot(lesson.getStartTime(), lesson.getEndTime(), lesson.getTrainer().getId());
         String eventId = calendarService.addEvent(lesson.getTitle(), "", lesson.getStartTime(), lesson.getEndTime());
         lesson.setGoogleEventId(eventId);
-        trainerStudentService.saveLink(lesson.getTrainer(), lesson.getStudent());
         return lessonsRepository.save(lesson);
     }
 
@@ -104,10 +124,13 @@ public class LessonService {
 
     @Transactional
     public Lesson cancelLesson(Lesson lesson) {
-        if (lesson.getStatus() == LessonStatus.TO_CONFIRM || lesson.getStatus() == LessonStatus.PLANNED) {
+        if (lesson.getStatus() == LessonStatus.PENDING_STUDENT_CONFIRMATION
+                || lesson.getStatus() == LessonStatus.PLANNED
+                || lesson.getStatus() == LessonStatus.PENDING_TRAINER_CONFIRMATION) {
             lesson.setStatus(LessonStatus.CANCELED);
             calendarService.deleteEvent(lesson.getGoogleEventId());
             lesson.setGoogleEventId(null);
+            slotService.addFreeTimeSlot(lesson.getStartTime(), lesson.getEndTime(), lesson.getTrainer().getId());
             return lessonsRepository.save(lesson);
         } else {
             throw new NotFoundException("Урок в статусе " + lesson.getStatus() + " не может быть отменен");
@@ -119,15 +142,6 @@ public class LessonService {
         LocalDateTime startDate = date.atStartOfDay();
         LocalDateTime endDate = startDate.plusDays(1);
         return lessonsRepository.findByStartTimeBetween(startDate, endDate);
-    }
-
-    public List<Lesson> findInPeriod(LocalDate startDate, LocalDate endDate) {
-        LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime = endDate.atStartOfDay().plusDays(1);
-        return lessonsRepository.findByStartTimeBetween(startDateTime, endDateTime)
-                .stream()
-                .sorted(Comparator.comparing(Lesson::getStartTime))
-                .collect(Collectors.toList());
     }
 
     public List<Lesson> findInPeriodNotCanceled(LocalDate startDate, LocalDate endDate, int trainerId) {
@@ -194,33 +208,12 @@ public class LessonService {
     }
 
     public List<Lesson> findPassedNotCompletedLessons() {
-        return lessonsRepository.findByStatusInAndStartTimeBefore(List.of(LessonStatus.TO_CONFIRM, LessonStatus.PLANNED), LocalDateTime.now());
+        return lessonsRepository.findByStatusInAndStartTimeBefore(List.of(LessonStatus.PENDING_STUDENT_CONFIRMATION, LessonStatus.PLANNED), LocalDateTime.now());
     }
 
     public List<Lesson> findByStudentAndDateAfter(int studentId, LocalDateTime dateTime) {
         return lessonsRepository.findByStudentIdAndStartTimeAfter(studentId, dateTime);
     }
-
-    public void addExistedToGoogle() {
-        List<Lesson> lessons = lessonsRepository.findByStatusInAndStartTimeAfter(List.of(LessonStatus.TO_CONFIRM, LessonStatus.PLANNED), LocalDateTime.now());
-        for (Lesson lesson : lessons) {
-            String event_id = calendarService.addEvent(lesson.getTitle(), lesson.getStudent().getAdditionalInfo(), lesson.getStartTime(), lesson.getEndTime());
-            lesson.setGoogleEventId(event_id);
-            lessonsRepository.save(lesson);
-        }
-    }
-
-//    public Lesson addLessonBySchedule(User student) { //todo!
-//        DayOfWeek day = student.getScheduleDay();
-//        log.info("day of week " + day.name());
-//        LocalTime time = student.getScheduleTime();
-//        LocalDate date = LocalDate.now().with(TemporalAdjusters.nextOrSame(day));
-//        if (!existByStudentDate(date, student.getId())) {
-//            return saveNewLesson(new Lesson(student, LocalDateTime.of(date, time), LessonStatus.TO_CONFIRM));
-//        } else {
-//            throw new RuntimeException("Lesson already exists for student " + student.getName());
-//        }
-//    }
 
     public List<Lesson> findByStudentIdAndStatus(int studentId, LessonStatus status) {
         return lessonsRepository.findByStudentIdAndStatus(studentId, status);
@@ -265,5 +258,34 @@ public class LessonService {
                 .toList();
         return new PaymentDTO().toPaymentDTO(student, lessons);
     }
+
+    @Transactional
+    public Lesson confirmLesson(Long lessonId, LessonStatus status) {
+        Lesson lesson = findById(lessonId);
+        if (lesson.getStatus() == status) {
+            lesson.setStatus(LessonStatus.PLANNED);
+            lesson = lessonsRepository.save(lesson);
+            return lesson;
+        } else {
+            throw new NotFoundException("Have no lesson to confirm");
+        }
+    }
+
+    public Lesson createLessonFromCalendar(TimeRequest timeRequest, User trainer, User student) {
+        if (slotService.checkIfSlotFree(timeRequest.getStart(), timeRequest.getEnd(), trainer.getId())) {
+            Lesson newLesson = new Lesson();
+            newLesson.setStudent(student);
+            newLesson.setTrainer(trainer);
+            newLesson.setStartTime(timeRequest.getStart());
+            newLesson.setEndTime(timeRequest.getEnd());
+            newLesson.setStatus(LessonStatus.PENDING_TRAINER_CONFIRMATION);
+            newLesson.setTitle(student.getName() + " WCS lesson");
+            newLesson.setDurationMin((int) Duration.between(newLesson.getStartTime(), newLesson.getEndTime()).toMinutes());
+            return saveNewLesson(newLesson);
+        } else {
+            throw new UnavailableTimeExeption("This time is not available");
+        }
+    }
+
 
 }

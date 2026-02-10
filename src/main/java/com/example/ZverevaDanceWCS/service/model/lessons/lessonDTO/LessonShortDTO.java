@@ -10,7 +10,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class LessonShortDTO {
-    private int id;
+    private Long id;
     private String studentName;
     private String startTime;
 

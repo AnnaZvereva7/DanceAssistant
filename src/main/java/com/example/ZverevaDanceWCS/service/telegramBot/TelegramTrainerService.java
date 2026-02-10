@@ -10,6 +10,7 @@ import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
+import com.example.ZverevaDanceWCS.service.model.freeSlots.FreeSlotService;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoService;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoStatus;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.StudentInfo;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -38,15 +38,17 @@ public class TelegramTrainerService {
     final PaymentService paymentService;
     final GoogleCalendarService calendarService;
     final InfoService infoService;
+    final FreeSlotService slotService;
 
     @Autowired
     public TelegramTrainerService(UserService userService, LessonService lessonService, PaymentService paymentService,
-                                  GoogleCalendarService calendarService, InfoService infoService) {
+                                  GoogleCalendarService calendarService, InfoService infoService, FreeSlotService slotService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.paymentService = paymentService;
         this.calendarService = calendarService;
         this.infoService = infoService;
+        this.slotService = slotService;
     }
 
 
@@ -190,7 +192,7 @@ public class TelegramTrainerService {
     public HashMap<Long, String> cancelLesson(Long trainerChatId, String[] addInfo) {
         HashMap<Long, String> responses = new HashMap<>();
         if (addInfo != null && addInfo.length == 1) {
-            Lesson lesson = lessonService.findById(Integer.parseInt(addInfo[0]));
+            Lesson lesson = lessonService.findById(Long.parseLong(addInfo[0]));
             try {
                 lessonService.cancelLesson(lesson);
                 responses.put(trainerChatId, "lesson " + lesson.getStartTime().format(Constant.formatterTimeFirst) + " was canceled");
@@ -302,7 +304,7 @@ public class TelegramTrainerService {
         HashMap<Long, String> responses = new HashMap<>();
         if (addInfo != null && addInfo.length == 1) {//только номер урока
             try {
-                Lesson lesson = lessonService.findById(Integer.parseInt(addInfo[0]));
+                Lesson lesson = lessonService.findById(Long.parseLong(addInfo[0]));
                 if (lesson.getStatus() != LessonStatus.COMPLETED
                         && lesson.getStatus() != LessonStatus.CANCELED
                         && lesson.getStatus() != LessonStatus.PAID) {

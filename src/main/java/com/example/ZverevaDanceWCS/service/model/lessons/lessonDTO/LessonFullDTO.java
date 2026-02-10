@@ -10,7 +10,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public class LessonFullDTO {
-    private int id;
+    private Long id;
     private int studentId;
     private String studentName;
     private String startTime;

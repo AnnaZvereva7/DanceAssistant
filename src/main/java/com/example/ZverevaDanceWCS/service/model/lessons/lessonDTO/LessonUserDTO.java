@@ -15,14 +15,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Getter
 @Setter
-public class LessonUserDAO { //time date - status - recap
+public class LessonUserDTO { //time date - status - recap
     @JsonFormat(pattern = "dd-MM-yy HH:mm")
     LocalDateTime dateTime;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     LessonStatus status;
-    int lessonId;
+    Long lessonId;
 
-    public LessonUserDAO (Lesson lesson) {
+    public LessonUserDTO(Lesson lesson) {
         this.dateTime=lesson.getStartTime();
         this.status=lesson.getStatus();
         this.lessonId=lesson.getId();

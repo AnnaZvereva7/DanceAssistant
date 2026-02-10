@@ -18,7 +18,7 @@ public class Lesson implements Comparable<Lesson> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "lesson_id")
-    int id;
+    Long id;
 
 
     @ManyToOne
@@ -106,7 +106,7 @@ public class Lesson implements Comparable<Lesson> {
         this.endTime=startTime.plusMinutes(durationMin);
         if (this.status==LessonStatus.COMPLETED) {
             this.forPayment=this.cost*this.durationMin/oldDuration;
-        } if (this.status==LessonStatus.PLANNED||this.status==LessonStatus.TO_CONFIRM) {
+        } if (this.status==LessonStatus.PLANNED||this.status==LessonStatus.PENDING_STUDENT_CONFIRMATION) {
         if(this.forPayment!=0) {
         this.forPayment=this.cost*this.durationMin/60;}
         }

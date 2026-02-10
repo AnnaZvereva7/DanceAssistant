@@ -7,7 +7,7 @@ import com.example.ZverevaDanceWCS.service.model.exception.WrongDateException;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
-import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDAO;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDTO;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoService;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
@@ -58,8 +58,8 @@ public class TelegramStudentService {
            return lessons.stream()
                     .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
                     .sorted(Comparator.comparing(Lesson::getStartTime))
-                    .map(LessonUserDAO::new)
-                    .map(LessonUserDAO::toString)
+                    .map(LessonUserDTO::new)
+                    .map(LessonUserDTO::toString)
                     .collect(Collectors.joining("\n"));
         }
     }
