@@ -1,10 +1,9 @@
 package com.example.ZverevaDanceWCS.service.model.lessons;
 
-import com.example.ZverevaDanceWCS.service.calendar.GoogleCalendarService;
-import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventService;
+import com.example.ZverevaDanceWCS.service.googleCalendar.GoogleCalendarService;
 import com.example.ZverevaDanceWCS.service.model.exception.ExceptionForAdmin;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
-import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeExeption;
+import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeException;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.freeSlots.*;
 import com.example.ZverevaDanceWCS.service.model.calendarEvent.TimeRequest;
@@ -271,7 +270,7 @@ public class LessonService {
         }
     }
 
-    public Lesson createLessonFromCalendar(TimeRequest timeRequest, User trainer, User student) {
+    public Lesson createLessonFromStudentCalendar(TimeRequest timeRequest, User trainer, User student) {
         if (slotService.checkIfSlotFree(timeRequest.getStart(), timeRequest.getEnd(), trainer.getId())) {
             Lesson newLesson = new Lesson();
             newLesson.setStudent(student);
@@ -283,8 +282,20 @@ public class LessonService {
             newLesson.setDurationMin((int) Duration.between(newLesson.getStartTime(), newLesson.getEndTime()).toMinutes());
             return saveNewLesson(newLesson);
         } else {
-            throw new UnavailableTimeExeption("This time is not available");
+            throw new UnavailableTimeException("This time is not available");
         }
+    }
+
+    public Lesson createLessonFromTrainerCalendar(TimeRequest timeRequest, User trainer, User student) {
+            Lesson newLesson = new Lesson();
+            newLesson.setStudent(student);
+            newLesson.setTrainer(trainer);
+            newLesson.setStartTime(timeRequest.getStart());
+            newLesson.setEndTime(timeRequest.getEnd());
+            newLesson.setStatus(LessonStatus.PENDING_STUDENT_CONFIRMATION);
+            newLesson.setTitle(student.getName() + " WCS lesson");
+            newLesson.setDurationMin((int) Duration.between(newLesson.getStartTime(), newLesson.getEndTime()).toMinutes());
+            return saveNewLesson(newLesson);
     }
 
 

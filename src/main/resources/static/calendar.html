@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -104,15 +104,15 @@
         <div class="chip"><span class="dot" style="background:#ffe0a3;"></span> PENDING_CONFIRMATION</div>
     </div>
     <div style="display:flex; gap:10px;">
-        <button id="btnReload" type="button">Обновить</button>
-        <button id="btnToMain" type="button">To main page</button>
+        <button id="btnReload" type="button">Refresh</button>
+        <button id="btnToMain" type="button">Back to Home</button>
     </div>
 </div>
 
 <div class="legend" id="studentActions" style="display:none;">
-    <div>Действия ученика</div>
+    <div>Student Actions</div>
     <div>
-        <button id="btnAddLesson" type="button">Добавить урок</button>
+        <button id="btnAddLesson" type="button">Add Lesson</button>
     </div>
 </div>
 
@@ -122,8 +122,8 @@
 <div id="modal">
     <div id="modalCard">
         <div style="display:flex; justify-content: space-between; align-items:center; gap:10px;">
-            <div id="modalTitle" style="font-weight: 600;">Модалка</div>
-            <button id="btnModalClose" type="button">Закрыть</button>
+            <div id="modalTitle" style="font-weight: 600;">Modal</div>
+            <button id="btnModalClose" type="button">Close</button>
         </div>
         <div id="modalBody" style="margin-top: 12px;"></div>
     </div>
@@ -319,6 +319,19 @@
       });
     }
 
+    async function trainerGetStudents() {
+      // expected: [{id, name}, ...]
+      return await fetchJson('/calendar/get_students');
+    }
+
+    async function trainerNewLesson(studentId, lessonTimeRequest) {
+      await fetchText(`/calendar/new_lesson/${encodeURIComponent(studentId)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
+        body: JSON.stringify(lessonTimeRequest)
+      });
+    }
+
     // --- UI: choose time inside a FREE slot (LessonTimeRequest) ---
     function openTimePickerInFreeSlot({ trainerId, slotStart, slotEnd, onPick }) {
       const durations = [60, 90]; // minutes
@@ -344,7 +357,7 @@
             <button id="btnPickTime" type="button">Choose</button>
           </div>
 
-          <div class="smallNote">Начало предлагается с шагом 30 минут. Можно поменять на 15 минут в коде.</div>
+          <div class="smallNote">Start times are offered in 30-minute intervals.</div>
         `
       );
 
@@ -361,7 +374,7 @@
           const label = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           options.push(`<option value="${t.toISOString()}">${label}</option>`);
         }
-        startSelect.innerHTML = options.length ? options.join('') : `<option disabled>Нет доступных вариантов</option>`;
+        startSelect.innerHTML = options.length ? options.join('') : `<option disabled>No available options.</option>`;
       }
 
       durationSelect.addEventListener('change', buildStartOptions);
@@ -397,7 +410,7 @@
       showModal(
         title,
         `
-          <div class="smallNote">Кликни по свободному слоту, затем выбери длительность и точное время.</div>
+          <div class="smallNote">Click on a free slot, then select the duration and exact time.</div>
           <div id="freeCal" style="margin-top: 10px;"></div>
         `
       );
@@ -442,16 +455,16 @@
       }).join('');
 
       showModal(
-        'Добавить урок: выбери тренера',
+        'Add Lesson: Select a Trainer',
         `
           <div class="actionRow">
             <select id="trainerSelect">
-              <option value="" disabled selected>— выбрать —</option>
+              <option value="" disabled selected>— select —</option>
               ${list}
             </select>
-            <button id="btnNext" type="button">Далее</button>
+            <button id="btnNext" type="button">Next</button>
           </div>
-          <div class="smallNote">После выбора откроется календарь свободных слотов тренера.</div>
+          <div class="smallNote">After selection, the trainer’s availability calendar will open.</div>
         `
       );
 
@@ -461,7 +474,7 @@
 
         await openFreeSlotsCalendar({
           trainerId,
-          title: `Свободные слоты тренера #${trainerId}`,
+          title: `Available Time Slots #${trainerId}`,
           onPick: async (lessonTimeRequest) => {
             await studentNewLesson(trainerId, lessonTimeRequest);
             calendar.refetchEvents();
@@ -473,7 +486,7 @@
     // --- Main ---
     document.addEventListener('DOMContentLoaded', async function() {
       if (!window.FullCalendar) {
-        showError('FullCalendar не загрузился. Проверь Network → index.global.min.js (должен быть 200).');
+        showError('FullCalendar did not load. Check Network → index.global.min.js (should return 200).');
         return;
       }
 
@@ -496,10 +509,10 @@
       const eventsUrl = isTrainer ? '/calendar' : '/calendar/user';
 
       if (isTrainer) {
-        modeTextEl.textContent = 'Режим тренера: выделите время мышкой, чтобы добавить FREE слот. Клик по FREE — удалить.';
+        modeTextEl.textContent = 'РTrainer Mode: Select a time range with your mouse to add a FREE slot or a New Lesson.';
         studentActions.style.display = 'none';
       } else {
-        modeTextEl.textContent = 'Режим ученика: TO_CONFIRM можно подтвердить/отменить. BOOKED можно удалить/перенести. Кнопка «Добавить урок» — выбор тренера и времени.';
+        modeTextEl.textContent = 'Student Mode: Lessons marked TO_CONFIRM can be confirmed or canceled.\nBOOKED lessons can be deleted or rescheduled.\nUse “Add Lesson” to select a trainer and time.';
         studentActions.style.display = 'flex';
       }
 
@@ -528,7 +541,7 @@
 
             successCallback(events);
           } catch (err) {
-            showError('Ошибка загрузки событий:\n' + err.message);
+            showError('Error loading events:\n' + err.message);
             failureCallback(err);
           }
         },
@@ -539,7 +552,7 @@
           return cls ? [cls] : [];
         },
 
-        // TRAINER: create FREE slot by selecting a range
+        // TRAINER: create FREE slot or Lesson by selecting a range
         select: async function(selectionInfo) {
           if (!isTrainer) return;
 
@@ -549,44 +562,88 @@
           const startUi = formatTimeHHMM(selectionInfo.start);
           const endUi   = formatTimeHHMM(selectionInfo.end);
 
-          if (!confirm(`Добавить FREE слот?\n${startUi} — ${endUi}`)) {
-            calendar.unselect();
-            return;
-          }
-
           const timeRequest = {
             start: startIso,
             end: endIso,
           };
 
-          try {
-            await trainerAddFreeSlot(timeRequest);
-            calendar.unselect();
-            calendar.refetchEvents();
-          } catch (err) {
-            showError('Ошибка добавления FREE слота:\n' + err.message);
-            calendar.unselect();
-          }
+          showModal(
+                  `${startUi} — ${endUi}`,
+                  `
+                  <div class="actionRow">
+                    <button id="btnNewFreeSlot" type="button">New Free slot</button>
+                    <button id="btnNewLesson" type="button">New Lesson</button>
+                  </div>
+                  `
+          );
+
+          document.getElementById('btnNewFreeSlot').addEventListener('click', async () => {
+              try {
+                  await trainerAddFreeSlot(timeRequest);
+                  calendar.unselect();
+                  hideModal();
+                  calendar.refetchEvents();
+              } catch (err) {
+                  showError('Failed to add a free slot:\n' + err.message);
+                  calendar.unselect();
+              }
+          });
+
+          document.getElementById('btnNewLesson').addEventListener('click', async () => {
+              const students = await trainerGetStudents();
+              const list = (students || []).map(t => {
+                  const name = t.name ?? t.fullName ?? t.email ?? ('Student #' + t.id);
+                  return `<option value="${t.id}">${name}</option>`;
+              }).join('');
+
+              showModal(
+                  'Select student',
+                  `
+                  <div class="actionRow">
+                  <select id="studentSelect">
+                  <option value="" disabled selected>— select —</option>
+                  ${list}
+                  </select>
+                  <button id="btnNext" type="button">Next</button>
+                  </div>
+                  `
+              );
+
+              document.getElementById('btnNext').addEventListener('click', async () => {
+                  const studentId = document.getElementById('studentSelect').value;
+                  if (!studentId) return;
+                  try {
+                      await trainerNewLesson(studentId, timeRequest);
+                      hideModal();
+                      calendar.unselect();
+                      calendar.refetchEvents();
+                  } catch (err) {
+                      showError('Failed to add a new lesson:\n' + err.message);
+                      calendar.unselect();
+                  }
+              });
+          });
         },
+
 
         // Click actions
         eventClick: async function(info) {
           const ev = info.event;
           const status = normalizeStatus(ev.extendedProps?.status) || 'UNKNOWN';
 
-          // TRAINER: delete FREE slot
+          // TRAINER:
           if (isTrainer) {
            const lessonId = ev.id;
             //урок ожидающий подтверждения тренера надо подтвердить или отменить
             if (status === 'PENDING_TRAINER_CONFIRMATION') {
               showModal(
-                  'Урок ожидает подтверждения тренера',
+                  'The lesson is awaiting the trainer’s confirmation.',
                   `
                   <div><b>${ev.title}</b></div>
                   <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
                   <div class="actionRow">
-                    <button id="btnConfirm" type="button">Подтвердить</button>
-                    <button id="btnCancel" type="button">Отменить</button>
+                    <button id="btnConfirm" type="button">Confirm</button>
+                    <button id="btnCancel" type="button">Cancel</button>
                   </div>
                     `
               );
@@ -597,18 +654,18 @@
                     hideModal();
                     calendar.refetchEvents();
                   } catch (err) {
-                    showError('Ошибка подтверждения:\n' + err.message);
+                    showError('Confirmation error:\n' + err.message);
                   }
               });
 
               document.getElementById('btnCancel').addEventListener('click', async () => {
-                if (!confirm('Отменить урок?')) return;
+                if (!confirm('Cancel the lesson?')) return;
                     try {
                         await trainerDeleteLesson(lessonId);
                         hideModal();
                         calendar.refetchEvents();
                     } catch (err) {
-                        showError('Ошибка отмены:\n' + err.message);
+                        showError('Cancellation error:\n' + err.message);
                     }
                 });
               return;
@@ -616,23 +673,38 @@
 
 
             if (status === 'BOOKED' || status === 'PENDING_STUDENT_CONFIRMATION') {
-              alert(`${ev.title}\nСтатус: ${status}`);
+              showModal(
+                  `${ev.title}\nStatus: ${status}`,
+                  `
+                  <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
+                  <div class="actionRow">
+                    <button id="btnCancel" type="button">Cancel</button>
+                  </div>
+                  `
+              );
+
+              document.getElementById('btnCancel').addEventListener('click', async () => {
+                if (!confirm('Cancel the lesson?')) return;
+                    try {
+                        await trainerDeleteLesson(lessonId);
+                        hideModal();
+                        calendar.refetchEvents();
+                    } catch (err) {
+                        showError('Cancellation error:\n' + err.message);
+                    }
+                });
               return;
             }
 
             if (status === 'FREE') {
                 const slotId = ev.id;
-                if (!slotId) {
-                  showError('Для удаления слота нужно, чтобы event.id был slotId (строкой).');
-                  return;
-                }
-                if (!confirm('Удалить свободный слот?')) return;
+                if (!confirm('Delete this free slot?')) return;
 
                 try {
                   await trainerDeleteFreeSlot(slotId);
                   calendar.refetchEvents();
                 } catch (err) {
-                  showError('Ошибка удаления слота:\n' + err.message);
+                  showError('Failed to delete the slot:\n' + err.message);
                 }
                 return;
             }
@@ -645,13 +717,13 @@
 
               if (status === 'PENDING_STUDENT_CONFIRMATION') {
                 showModal(
-                  'Урок ожидает подтверждения',
+                  'Lesson awaiting confirmation',
                   `
                     <div><b>${ev.title}</b></div>
                     <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
                     <div class="actionRow">
-                      <button id="btnConfirm" type="button">Подтвердить</button>
-                      <button id="btnCancel" type="button">Отменить</button>
+                      <button id="btnConfirm" type="button">Confirm</button>
+                      <button id="btnCancel" type="button">Cancel</button>
                     </div>
                   `
                 );
@@ -662,18 +734,18 @@
                     hideModal();
                     calendar.refetchEvents();
                   } catch (err) {
-                    showError('Ошибка подтверждения:\n' + err.message);
+                    showError('Confirmation error:\n' + err.message);
                   }
                 });
 
                 document.getElementById('btnCancel').addEventListener('click', async () => {
-                  if (!confirm('Отменить урок?')) return;
+                  if (!confirm('Cancel the lesson?')) return;
                   try {
                     await studentDeleteLesson(lessonId);
                     hideModal();
                     calendar.refetchEvents();
                   } catch (err) {
-                    showError('Ошибка отмены:\n' + err.message);
+                    showError('Failed to cancel lesson:\n' + err.message);
                   }
                 });
 
@@ -682,45 +754,45 @@
 
               if (status === 'BOOKED'||status === 'PENDING_TRAINER_CONFIRMATION') {
                 showModal(
-                  'Урок забронирован',
+                  'Booked lesson',
                   `
                     <div><b>${ev.title}</b></div>
                     <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
                     <div class="actionRow">
-                      <button id="btnDelete" type="button">Удалить</button>
-                      <button id="btnMove" type="button">Перенести</button>
+                      <button id="btnDelete" type="button">Cancel</button>
+                      <button id="btnMove" type="button">Reschedule</button>
                     </div>
-                    <div class="smallNote">Для переноса выбери новый свободный слот у этого тренера, затем выбери точное время внутри него.</div>
+                    <div class="smallNote">To reschedule, select a new available slot with this trainer, then choose the exact time within it.</div>
                   `
                 );
 
                 document.getElementById('btnDelete').addEventListener('click', async () => {
-                  if (!confirm('Удалить урок?')) return;
+                  if (!confirm('Cancel the lesson?')) return;
                   try {
                     await studentDeleteLesson(lessonId);
                     hideModal();
                     calendar.refetchEvents();
                   } catch (err) {
-                    showError('Ошибка удаления урока:\n' + err.message);
+                    showError('Failed to delete the lesson:\n' + err.message);
                   }
                 });
 
                 document.getElementById('btnMove').addEventListener('click', async () => {
                   if (!trainerId) {
-                    showError('В событии нет extendedProps.trainerId. Для переноса trainerId обязателен.');
+                    showError('The event does not contain extendedProps.trainerId. The trainerId is required for rescheduling.');
                     return;
                   }
                   try {
                     await openFreeSlotsCalendar({
                       trainerId,
-                      title: `Выбери новый свободный слот (тренер #${trainerId})`,
+                      title: `Select a new available slot (trainer #${trainerId})`,
                       onPick: async (lessonTimeRequest) => {
                         await studentChangeLesson(lessonId, lessonTimeRequest);
                         calendar.refetchEvents();
                       }
                     });
                   } catch (err) {
-                    showError('Ошибка переноса:\n' + err.message);
+                    showError('Failed to reschedule\n' + err.message);
                   }
                 });
 
@@ -728,7 +800,7 @@
               }
 
               // fallback
-              alert(`${ev.title}\nСтатус: ${status}`);
+              alert(`${ev.title}\nStatus: ${status}`);
           }
         }
       });
@@ -743,7 +815,7 @@
             window.location.href = 'user.html';
           } else {
             // запасной вариант
-            window.location.href = '/';
+            window.location.href = 'index.html';
           }
       });
 
@@ -755,14 +827,14 @@
           try {
             await openAddLessonFlow(calendar);
           } catch (err) {
-            showError('Ошибка добавления урока:\n' + err.message);
+            showError('Failed to add a lesson:\n' + err.message);
           }
         });
         if (openAddLesson) {
           try {
             await openAddLessonFlow(calendar);
           } catch (err) {
-            showError('Ошибка добавления урока:\n' + err.message);
+            showError('Failed to add a lesson:\n' + err.message);
           }
         }
       }

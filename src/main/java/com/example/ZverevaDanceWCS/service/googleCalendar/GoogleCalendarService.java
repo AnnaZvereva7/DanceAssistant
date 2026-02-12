@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.calendar;
+package com.example.ZverevaDanceWCS.service.googleCalendar;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import java.time.LocalDateTime;

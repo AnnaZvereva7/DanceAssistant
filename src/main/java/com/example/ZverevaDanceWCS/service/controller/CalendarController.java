@@ -14,6 +14,7 @@ import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import com.example.ZverevaDanceWCS.service.model.user.UserSiteStatus;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramStudentBot;
 import com.example.ZverevaDanceWCS.service.telegramBot.TelegramTrainerBot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -33,14 +34,16 @@ public class CalendarController {
  final LessonService lessonService;
  final TelegramTrainerBot telegramTrainerBot;
  final TrainerStudentService trainerStudentService;
+ final TelegramStudentBot telegramStudentBot;
 
-    public CalendarController(FreeSlotService slotService, CalendarEventService calendarEventService, UserService userService, LessonService lessonService, TelegramTrainerBot telegramTrainerBot, TrainerStudentService trainerStudentService) {
+    public CalendarController(FreeSlotService slotService, CalendarEventService calendarEventService, UserService userService, LessonService lessonService, TelegramTrainerBot telegramTrainerBot, TrainerStudentService trainerStudentService, TelegramStudentBot telegramStudentBot) {
         this.slotService = slotService;
         this.calendarEventService = calendarEventService;
         this.userService = userService;
         this.lessonService = lessonService;
         this.telegramTrainerBot = telegramTrainerBot;
         this.trainerStudentService = trainerStudentService;
+        this.telegramStudentBot = telegramStudentBot;
     }
 
     private User findUserFromSession(HttpSession session) {
@@ -140,7 +143,7 @@ public class CalendarController {
     public CalendarEventDto addNewLesson(@PathVariable int trainerId, @RequestBody TimeRequest timeRequest, HttpSession session) {
         User student = findUserFromSession(session);
         User trainer = userService.findById(trainerId);
-        Lesson lesson = lessonService.createLessonFromCalendar(timeRequest, trainer, student);
+        Lesson lesson = lessonService.createLessonFromStudentCalendar(timeRequest, trainer, student);
         if(lesson.getTrainer().getMessenger()== Messenger.TELEGRAM) {
             telegramTrainerBot.send(lesson.getTrainer().getChatId(), "New lesson: " + lesson.getStartTime().format(Constant.formatterDayTime) + " with student " + lesson.getStudent().getName());
         }
@@ -160,13 +163,33 @@ public class CalendarController {
             if(lesson.getStatus()==LessonStatus.PENDING_STUDENT_CONFIRMATION|| lesson.getStatus()==LessonStatus.PLANNED
             || lesson.getStatus()==LessonStatus.PENDING_TRAINER_CONFIRMATION) {
                 lesson.setStatus(LessonStatus.PENDING_TRAINER_CONFIRMATION);
-                Lesson newLesson=calendarEventService.changeLessonTime(timeRequest.getStart(), timeRequest.getEnd(), lesson);
+                Lesson newLesson=calendarEventService.changeLessonTimeByStudent(timeRequest.getStart(), timeRequest.getEnd(), lesson);
                 if(lesson.getTrainer().getMessenger()== Messenger.TELEGRAM) {
                     telegramTrainerBot.send(lesson.getTrainer().getChatId(), "Lesson changed: " + newLesson.getStartTime().format(Constant.formatterDayTime) + " with student " + lesson.getStudent().getName());
                 }
             } else {
                 throw new RuntimeException("You are not allowed to change this lesson in status " + lesson.getStatus());
             }
+        }
+    }
+
+    @GetMapping("/get_students")
+    @PreAuthorize("hasRole('TRAINER') or hasRole('ADMIN')")
+    public List<UserShortDTO> getStudentsByTrainer(HttpSession session) {
+        User trainer = findUserFromSession(session);
+        List<User> students = trainerStudentService.getActualStudentsByTrainer(trainer.getId());
+        return students.stream().map(UserShortDTO::toShortDTO).toList();
+    }
+
+    @PostMapping("/new_lesson/{studentId}")
+    @PreAuthorize("hasRole('TRAINER') or hasRole('ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addNewLessonByTrainer(@PathVariable int studentId, @RequestBody TimeRequest timeRequest, HttpSession session) {
+        User trainer = findUserFromSession(session);
+        User student = userService.findById(studentId);
+        Lesson lesson = lessonService.createLessonFromTrainerCalendar(timeRequest, trainer, student);
+        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
+            telegramStudentBot.send(lesson.getStudent().getChatId(), "New lesson: " + lesson.getStartTime().format(Constant.formatterDayTime) + " with trainer " + lesson.getTrainer().getName());
         }
     }
 

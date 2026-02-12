@@ -1,6 +1,6 @@
 package com.example.ZverevaDanceWCS.service.telegramBot;
 
-import com.example.ZverevaDanceWCS.service.calendar.GoogleCalendarService;
+import com.example.ZverevaDanceWCS.service.googleCalendar.GoogleCalendarService;
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.exception.CommandNotRecognizedException;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;

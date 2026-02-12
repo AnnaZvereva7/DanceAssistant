@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Slf4j
 public class LessonNewDTO {
     @NotNull
     @Positive
@@ -30,7 +32,7 @@ public class LessonNewDTO {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     LessonStatus status;
 
-    int durationMinutes;
+    int durationMin;
     int cost;
 
     public Lesson newLessonFromJson(User student, User trainer) {
@@ -44,10 +46,11 @@ public class LessonNewDTO {
         } else {
             newLesson.setCost(0);
         }
-        if(this.durationMinutes==0){
+        log.info("duration ="+this.durationMin);
+        if(this.durationMin ==0){
             newLesson.setDurationMin(60);
         } else {
-            newLesson.setDurationMin(this.durationMinutes);
+            newLesson.setDurationMin(this.durationMin);
         }
         newLesson.setEndTime(this.getStartTime().plusMinutes(newLesson.getDurationMin()));
         newLesson.setTitle(student.getName()+" WCS Lesson");

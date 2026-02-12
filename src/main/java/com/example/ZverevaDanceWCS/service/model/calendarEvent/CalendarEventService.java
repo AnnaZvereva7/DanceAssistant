@@ -1,7 +1,6 @@
 package com.example.ZverevaDanceWCS.service.model.calendarEvent;
 
-import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeExeption;
-import com.example.ZverevaDanceWCS.service.model.freeSlots.FreeSlot;
+import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeException;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.freeSlots.FreeSlotService;
@@ -76,16 +75,20 @@ public class CalendarEventService {
         slotService.delete(freeSlotId);
     }
 
-    public Lesson changeLessonTime (LocalDateTime newStart, LocalDateTime newEnd, Lesson oldLesson) {
+    public Lesson changeLessonTimeByStudent(LocalDateTime newStart, LocalDateTime newEnd, Lesson oldLesson) {
         if (slotService.checkIfSlotFree(newStart, newEnd, oldLesson.getTrainer().getId())) {
+            return changeLessonTime(newStart, newEnd, oldLesson);
+        } else {
+            throw new UnavailableTimeException("This time in not free");
+        }
+    }
+
+    public Lesson changeLessonTime (LocalDateTime newStart, LocalDateTime newEnd, Lesson oldLesson) {
             slotService.addFreeTimeSlot(oldLesson.getStartTime(), oldLesson.getEndTime(), oldLesson.getTrainer().getId());
             slotService.bookPartOfFreeSlot(newStart, newEnd, oldLesson.getTrainer().getId());
             oldLesson.setStartTime(newStart);
             oldLesson.setEndTime(newEnd);
             oldLesson.setDurationMin((int) Duration.between(oldLesson.getStartTime(), oldLesson.getEndTime()).toMinutes());
             return lessonService.updateLesson(oldLesson);
-        } else {
-            throw new UnavailableTimeExeption("This time in not free");
-        }
     }
 }

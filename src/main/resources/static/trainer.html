@@ -788,7 +788,7 @@ let currentStudentId = null;
     let startTime = document.getElementById("newLessonStartTime").value;
     let cost = parseInt(document.getElementById("newLessonCost").value);
     let status = document.getElementById("newLessonStatus").value;
-    let duration = parseInt(document.getElementById("newLessonDuration").value);
+    let duration = document.getElementById("newLessonDuration").value;
     if (!id) {
         alert("Сначала выберите ученика");
         return;

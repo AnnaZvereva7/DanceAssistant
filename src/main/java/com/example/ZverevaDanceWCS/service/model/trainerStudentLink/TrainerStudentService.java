@@ -2,6 +2,7 @@ package com.example.ZverevaDanceWCS.service.model.trainerStudentLink;
 
 
 import com.example.ZverevaDanceWCS.service.model.user.User;
+import com.example.ZverevaDanceWCS.service.model.user.UserRole;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,6 +27,15 @@ public class TrainerStudentService {
     public List<User> getAllStudentsByTrainer(int trainerId) {
         List<TrainerStudentLink> links = repository.findAllByTrainerId(trainerId);
         return links.stream().map(TrainerStudentLink::fromLinkGetStudent).toList();
+    }
+
+    public List<User> getActualStudentsByTrainer(int trainerId) {
+        List<TrainerStudentLink> links = repository.findAllByTrainerId(trainerId);
+        return links
+                .stream()
+                .map(TrainerStudentLink::fromLinkGetStudent)
+                .filter(user -> user.getRole()== UserRole.BY_REQUEST||user.getRole()==UserRole.PERMANENT)
+                .toList();
     }
 
     public List<User> getAllTrainersByStudent(int studentId) {
