@@ -1,19 +1,17 @@
 package com.example.ZverevaDanceWCS.service.authorisation;
 
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
 
 @Slf4j
 @Configuration
@@ -42,7 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/images/**", "/guest.html").permitAll()
 
                         // OAuth endpoints
-                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**", "/auth/login/google").permitAll()
                         .requestMatchers("/error", "/favicon.ico").permitAll()
 
                         // защищённые статические страницы
@@ -57,8 +55,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth
-                        // твоя статическая страница логина
-                        .loginPage("/index.html")
                         .userInfoEndpoint(u -> u.oidcUserService(customOidcUserService))
                         .successHandler(successHandler)
                 )

@@ -66,3 +66,12 @@
         schedule_day VARCHAR(50),
         schedule_time TIME
     );
+
+    CREATE TABLE if not exists trainer_calendar_links (
+        link_id BIGSERIAL PRIMARY KEY,
+        trainer_id BIGINT NOT NULL,
+        token TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMPTZ NOT NULL,
+        expires BOOLEAN not NULL
+    );
+

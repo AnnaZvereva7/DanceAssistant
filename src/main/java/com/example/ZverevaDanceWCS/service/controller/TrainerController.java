@@ -18,6 +18,7 @@ import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoService;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.NewInfoDTO;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.StudentInfo;
 import com.example.ZverevaDanceWCS.service.model.user.*;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.TrainerInfoDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserFullDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByAdminDto;
@@ -258,6 +259,18 @@ public class TrainerController {
         lessonToUpdate.setCost(lessonUpdateDto.getCost());
         Lesson updatedLesson =calendarEventService.changeLessonTime(lessonUpdateDto.getStartTime(), newEndTime, lessonToUpdate);
         return LessonFullDTO.toFullDTO(updatedLesson);
+    }
+
+    @GetMapping("/my_info")
+    public TrainerInfoDTO getTrainerInfo(HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        return userService.getTrainerInfo(trainer);
+    }
+
+    @GetMapping("/refresh_link")
+    public TrainerInfoDTO refreshCalendarLink(HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        return userService.refreshCalendarLink(trainer);
     }
 
 }

@@ -1,14 +1,18 @@
 package com.example.ZverevaDanceWCS.service.model.user;
 
 import com.example.ZverevaDanceWCS.service.Constant;
+import com.example.ZverevaDanceWCS.service.model.calendarLink.CalendarLinkService;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.TrainerInfoDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserNewDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,22 +20,28 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-import static com.google.common.graph.ElementOrder.sorted;
 
 @Slf4j
 @Service
+@PropertySource("application.properties")
 public class UserService {
 
     private final UserRepository userRepository;
     private final InfoService infoService;
     private final ScheduleService scheduleService;
     private final TrainerStudentService trainerStudentService;
+    private final CalendarLinkService calendarLinkService;
+    @Value("${public.url}")
+    private String publicUrl;
 
-    public UserService(UserRepository userRepository, InfoService infoService, ScheduleService scheduleService, TrainerStudentService trainerStudentService) {
+
+
+    public UserService(UserRepository userRepository, InfoService infoService, ScheduleService scheduleService, TrainerStudentService trainerStudentService, CalendarLinkService calendarLinkService) {
         this.userRepository = userRepository;
         this.infoService = infoService;
         this.scheduleService = scheduleService;
         this.trainerStudentService = trainerStudentService;
+        this.calendarLinkService = calendarLinkService;
     }
 
     public User newUser(String name) {
@@ -153,4 +163,15 @@ public class UserService {
     public List<User> findAllByRoleInAndTrainerId(List<UserRole> roles, int trainerId) {
         return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().filter(u->roles.contains(u.getRole())).sorted(User.compareById()).toList();
     }
+
+     public TrainerInfoDTO getTrainerInfo(User trainer) {
+         String calendarLink = calendarLinkService.findOrCreateLink(trainer.getId()).setLink(publicUrl);
+         log.info("Generated calendar link for trainer id=" + trainer.getName() + " link: " + calendarLink);
+         return new TrainerInfoDTO(trainer.getName(), trainer.getEmail(), calendarLink);
+     }
+
+     public TrainerInfoDTO refreshCalendarLink(User trainer) {
+         String calendarLink = calendarLinkService.refreshLink(trainer.getId()).setLink(publicUrl);
+         return new TrainerInfoDTO(trainer.getName(), trainer.getEmail(), calendarLink);
+     }
 }

@@ -2,6 +2,7 @@ package com.example.ZverevaDanceWCS.service.controller;
 
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventService;
+import com.example.ZverevaDanceWCS.service.model.calendarLink.CalendarLinkService;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.freeSlots.*;
@@ -35,8 +36,9 @@ public class CalendarController {
  final TelegramTrainerBot telegramTrainerBot;
  final TrainerStudentService trainerStudentService;
  final TelegramStudentBot telegramStudentBot;
+ final CalendarLinkService calendarLinkService;
 
-    public CalendarController(FreeSlotService slotService, CalendarEventService calendarEventService, UserService userService, LessonService lessonService, TelegramTrainerBot telegramTrainerBot, TrainerStudentService trainerStudentService, TelegramStudentBot telegramStudentBot) {
+    public CalendarController(FreeSlotService slotService, CalendarEventService calendarEventService, UserService userService, LessonService lessonService, TelegramTrainerBot telegramTrainerBot, TrainerStudentService trainerStudentService, TelegramStudentBot telegramStudentBot, CalendarLinkService calendarLinkService) {
         this.slotService = slotService;
         this.calendarEventService = calendarEventService;
         this.userService = userService;
@@ -44,6 +46,7 @@ public class CalendarController {
         this.telegramTrainerBot = telegramTrainerBot;
         this.trainerStudentService = trainerStudentService;
         this.telegramStudentBot = telegramStudentBot;
+        this.calendarLinkService = calendarLinkService;
     }
 
     private User findUserFromSession(HttpSession session) {
@@ -53,8 +56,12 @@ public class CalendarController {
 
     @GetMapping("/role")
     public UserSiteStatus getUserRole(HttpSession session) {
-        User user = findUserFromSession(session);
-        return user.getUserSiteStatus();
+        try {
+            User user = findUserFromSession(session);
+            return user.getUserSiteStatus();
+        } catch (RuntimeException ex) {
+            return UserSiteStatus.UNAUTHORIZED;
+        }
     }
 
     @PreAuthorize("hasRole('TRAINER') or hasRole('ADMIN')")
@@ -138,6 +145,12 @@ public class CalendarController {
         return calendarEventService.getTrainerFreeSlots(trainerId);
     }
 
+    @GetMapping("get_free_slots")
+    public List<CalendarEventDto> getFreeSlotsByToken(@RequestParam("token") String token) {
+        int trainerId=calendarLinkService.findTrainerIdByToken(token);
+        return calendarEventService.getTrainerFreeSlots(trainerId);
+    }
+
     @PostMapping("/user/new_lesson/{trainerId}")
     @PreAuthorize("hasRole('USER')")
     public CalendarEventDto addNewLesson(@PathVariable int trainerId, @RequestBody TimeRequest timeRequest, HttpSession session) {
@@ -201,7 +214,5 @@ public class CalendarController {
         List<User> trainers = trainerStudentService.getAllTrainersByStudent(student.getId());
         return trainers.stream().map(UserShortDTO::toShortDTO).toList();
     }
-
-
 
 }

@@ -133,6 +133,7 @@
     </form>
 </div>
 <h1>DanceAssistant</h1>
+<button id="loadMyInfoBtn">My Details</button>
 <button id="loadStudentsBtn">Students</button>
 <button id="loadLessonsBtn">Lessons</button>
 <button id="loadPaymentBtn">Payments</button>
@@ -157,6 +158,19 @@
 
     </div>
     <div class="right-panel">
+        <div id="myDetails" class="=hidden">
+            <h3>My details</h3>
+            <label>Name:
+                <input type="text" id="userName"></input>
+            </label>
+            <label> Email:
+                <input type="email" id="userEmail"></input>
+            </label>
+            <label> Calendar link:
+                <input type="text" id="calendarLink"></input>
+            </label>
+            <button id="refreshCalendarLink">Refresh calendar link</button>
+        </div>
         <div id="studentDetails" class="hidden">
             <h3>Student details</h3>
             <label>Student Id:
@@ -284,6 +298,50 @@
 <script>
     const API_BASE = "http://localhost:8080/trainer"; // поменяйте если другой порт
 
+    /* загрузка информации тренера */
+    document.getElementById("loadMyInfoBtn").addEventListener("click", loadMyInfo);
+    /* Показать информацию тренера*/
+    document.getElementById("loadMyInfoBtn").addEventListener("click", () => {
+        document.getElementById("myDetails").classList.remove("hidden");
+        document.getElementById("lessonsTab").classList.add("hidden");
+        document.getElementById("lessonDetails").classList.add("hidden");
+        document.getElementById("studentDetails").classList.add("hidden");
+        document.getElementById("paymentTab").classList.add("hidden");
+        document.getElementById("paymentDetails").classList.add("hidden");
+        document.getElementById("studentsTab").classList.add("hidden");
+    });
+
+    async function loadMyInfo() {
+        try {
+            const response = await fetch(API_BASE + "/my_info");
+            const trainer = await response.json();
+            // Здесь выводим данные на страницу
+            document.getElementById("userName").value = trainer.name ?? "";
+            document.getElementById("userEmail").value = trainer.email ?? "";
+            document.getElementById("calendarLink").value = trainer.link ?? "";
+
+            document.getElementById("myDetails").classList.remove("hidden");
+        } catch (error) {
+            console.error("Error loading my details:", error);
+             alert("Failed to load data.");
+        }
+    }
+
+    document.getElementById("refreshCalendarLink").addEventListener("click", refreshLink);
+
+    async function refreshLink() {
+        try {
+            const response = await fetch(API_BASE + "/refresh_link");
+            const trainer = await response.json();
+
+            document.getElementById("calendarLink").value = trainer.link ?? "";
+
+        } catch (error) {
+            console.error("Error refreshing link:", error);
+             alert("Failed to load data.");
+        }
+    }
+
     /* загрузка списка студентов по кнопке Students */
     document.getElementById("loadStudentsBtn").addEventListener("click", loadStudents);
     /* Показать студентов — скрыть уроки и платежи*/
@@ -294,6 +352,7 @@
         document.getElementById("studentDetails").classList.add("hidden");
         document.getElementById("paymentTab").classList.add("hidden");
         document.getElementById("paymentDetails").classList.add("hidden");
+        document.getElementById("myDetails").classList.add("hidden");
     });
     /*выведение на экран формы добавоения нового урока */
     document.getElementById("addNewLessonBtn").addEventListener("click", addLesson);
@@ -345,6 +404,7 @@
         document.getElementById("lessonDetails").classList.add("hidden");
         document.getElementById("paymentDetails").classList.add("hidden");
         document.getElementById("newLessonDetails").classList.add("hidden");
+        document.getElementById("myDetails").classList.add("hidden");
     });
 
     /* вкладка с платежами */
@@ -358,6 +418,7 @@
         document.getElementById("paymentDetails").classList.add("hidden");
         document.getElementById("lessonsTab").classList.add("hidden");
         document.getElementById("newLessonDetails").classList.add("hidden");
+        document.getElementById("myDetails").classList.add("hidden");
     });
 
     document.getElementById("sendBillBtn").addEventListener("click", sendBill);

@@ -106,6 +106,7 @@
     <div style="display:flex; gap:10px;">
         <button id="btnReload" type="button">Refresh</button>
         <button id="btnToMain" type="button">Back to Home</button>
+        <button id="btnLogin" style="display:none;">Login</button>
     </div>
 </div>
 
@@ -495,25 +496,51 @@
       const btnReload = document.getElementById('btnReload');
       const studentActions = document.getElementById('studentActions');
       const btnAddLesson = document.getElementById('btnAddLesson');
+      const btnLogin = document.getElementById('btnLogin');
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const publicToken = urlParams.get("token");
 
       let mode;
+
       try {
-        mode = await detectMode();
+            mode = await detectMode();
       } catch (e) {
-        showError(e.message);
-        return;
+            showError(e.message);
+            return;
       }
+
 
       const isTrainer = (mode === 'TRAINER');
       const isStudent = (mode === 'USER');
-      const eventsUrl = isTrainer ? '/calendar' : '/calendar/user';
+      const isUnauthorized = (mode === 'UNAUTHORIZED');
+
+      let eventsUrl;
+        if (isTrainer) eventsUrl = '/calendar';
+        else if (isStudent) eventsUrl = '/calendar/user';
+        else if (isUnauthorized) eventsUrl = `/calendar/get_free_slots?token=${encodeURIComponent(publicToken)}`;
+        else eventsUrl = '/calendar/user';
 
       if (isTrainer) {
-        modeTextEl.textContent = 'РTrainer Mode: Select a time range with your mouse to add a FREE slot or a New Lesson.';
+        modeTextEl.textContent = 'Trainer Mode: Select a time range with your mouse to add a FREE slot or a New Lesson.';
+        btnLogin.style.display = 'none';
         studentActions.style.display = 'none';
-      } else {
+      } else if (isStudent) {
         modeTextEl.textContent = 'Student Mode: Lessons marked TO_CONFIRM can be confirmed or canceled.\nBOOKED lessons can be deleted or rescheduled.\nUse “Add Lesson” to select a trainer and time.';
+        btnLogin.style.display = 'none';
         studentActions.style.display = 'flex';
+      } else if (isUnauthorized) {
+        modeTextEl.textContent = 'Public view: trainer free slots';
+         btnReload.style.display = 'none';
+         btnToMain.style.display = 'none';
+         btnLogin.style.display = 'inline-block';
+        studentActions.style.display = 'none';
+        const urlParams = new URLSearchParams(location.search);
+        const token = urlParams.get("token");
+        btnLogin.addEventListener('click', () => {
+            const returnTo = window.location.href;
+            window.location.href = `/auth/login/google?returnTo=${encodeURIComponent(returnTo)}&calendarToken=${encodeURIComponent(token ?? "")}`;
+        });
       }
 
       const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
@@ -628,6 +655,7 @@
 
         // Click actions
         eventClick: async function(info) {
+        if (isUnauthorized) return;
           const ev = info.event;
           const status = normalizeStatus(ev.extendedProps?.status) || 'UNKNOWN';
 
