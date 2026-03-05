@@ -201,9 +201,9 @@ public class CalendarController {
         User trainer = findUserFromSession(session);
         User student = userService.findById(studentId);
         Lesson lesson = lessonService.createLessonFromTrainerCalendar(timeRequest, trainer, student);
-        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
-            telegramStudentBot.send(lesson.getStudent().getChatId(), "New lesson: " + lesson.getStartTime().format(Constant.formatterDayTime) + " with trainer " + lesson.getTrainer().getName());
-        }
+//        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
+//            telegramStudentBot.send(lesson.getStudent().getChatId(), "New lesson: " + lesson.getStartTime().format(Constant.formatterDayTime) + " with trainer " + lesson.getTrainer().getName());
+//        }
     }
 
 

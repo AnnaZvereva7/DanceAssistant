@@ -75,3 +75,22 @@
         expires BOOLEAN not NULL
     );
 
+    create table if not exists spotify_tracks (
+        track_id SERIAL PRIMARY KEY,
+        spotify_track_id VARCHAR(255) NOT NULL,
+        track_title VARCHAR(255),
+        artist_name VARCHAR(255),
+        bpm int NOT NULL
+    );
+
+    create table if not exists tags (
+        tag_id SERIAL PRIMARY KEY,
+        tag_name VARCHAR(255) NOT NULL UNIQUE
+    );
+
+    create table if not exists track_tags (
+        track_id SERIAL REFERENCES spotify_tracks(track_id) ON DELETE CASCADE,
+        tag_id INT REFERENCES tags(tag_id) ON DELETE CASCADE,
+        PRIMARY KEY (track_id, tag_id)
+    )
+

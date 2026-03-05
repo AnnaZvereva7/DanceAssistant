@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Music</title>
+    <style>
+        :root{
+          --bg:#0b0f1a;
+          --card:#121a2b;
+          --text:#e7ecff;
+          --muted:#aeb7d6;
+          --line:rgba(255,255,255,.10);
+          --accent:#6aa6ff;
+          --accent2:#7cf0c6;
+          --danger:#ff6a6a;
+          --shadow: 0 10px 30px rgba(0,0,0,.35);
+          --radius: 18px;
+        }
+        *{ box-sizing:border-box; }
+        body{
+          margin:0;
+          font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+          background: radial-gradient(1200px 700px at 15% 10%, rgba(106,166,255,.18), transparent 55%),
+                      radial-gradient(900px 600px at 85% 20%, rgba(124,240,198,.14), transparent 55%),
+                      var(--bg);
+          color:var(--text);
+        }
+
+        .wrap{
+          max-width: 980px;
+          margin: 26px auto;
+          padding: 0 18px 40px;
+        }
+
+        /* Buttons (как раньше) */
+        .btn{
+          appearance:none;
+          border:1px solid var(--line);
+          background: rgba(255,255,255,.05);
+          color: var(--text);
+          padding: 10px 14px;
+          border-radius: 14px;
+          cursor:pointer;
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          gap:10px;
+          font-weight: 700;
+          letter-spacing: .2px;
+          transition: transform .05s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+          user-select:none;
+          white-space:nowrap;
+          min-width: 160px;
+          text-transform: uppercase;
+          font-size: 12px;
+        }
+        .btn:hover{ background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); }
+        .btn:active{ transform: translateY(1px); }
+        .btn.primary{
+          background: linear-gradient(135deg, rgba(106,166,255,.95), rgba(106,166,255,.55));
+          border-color: rgba(106,166,255,.35);
+        }
+        .btn.primary:hover{ filter: brightness(1.05); }
+        .btn.good{
+          background: linear-gradient(135deg, rgba(124,240,198,.95), rgba(124,240,198,.45));
+          border-color: rgba(124,240,198,.35);
+          color: #071016;
+        }
+        .btn.ghost{ background: transparent; }
+        .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+        /* Inputs */
+        label{
+          font-size: 14px;
+          color: var(--text);
+        }
+        input{
+          padding: 8px 10px;
+          border-radius: 8px;
+          border:1px solid var(--line);
+          background: rgba(0,0,0,.20);
+          color: var(--text);
+          outline:none;
+          transition: border-color .2s ease, background .2s ease;
+          height: 28px;
+        }
+        input:focus{
+          border-color: rgba(106,166,255,.45);
+          background: rgba(0,0,0,.26);
+        }
+
+        /* Layout как на рисунке */
+        .top-row{
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          gap: 18px;
+          margin-top: 4px;
+        }
+        .left-col{
+          flex: 1;
+          min-width: 520px;
+        }
+        .right-col{
+          width: 220px;
+          display:flex;
+          flex-direction:column;
+          gap: 12px;
+          align-items:flex-end;
+          padding-top: 6px;
+        }
+
+        h2{
+          margin: 0 0 14px 0;
+          font-size: 26px;
+          font-weight: 800;
+          letter-spacing: .2px;
+        }
+
+        .section{
+          padding: 4px 0 0 0;
+        }
+
+        .create-grid{
+          display:grid;
+          grid-template-columns: 60px 70px 1fr;
+          grid-row-gap: 12px;
+          grid-column-gap: 10px;
+          align-items:center;
+          width: 420px; /* чтобы выглядело как на скрине */
+        }
+        .create-grid .bpm-suffix{
+          color: var(--text);
+          opacity: .9;
+          font-size: 16px;
+        }
+        .create-actions{
+          margin-top: 18px;
+          width: 420px;
+          display:flex;
+          justify-content:center; /* кнопка по центру как на скрине */
+        }
+
+        .spacer{
+          height: 42px; /* промежуток между секциями как на скрине */
+        }
+
+        .add-grid{
+          display:grid;
+          grid-template-columns: 60px 260px;
+          grid-row-gap: 12px;
+          grid-column-gap: 14px;
+          align-items:center;
+          width: 420px;
+        }
+        .add-grid .wide{ width: 100%; }
+        .add-actions{
+          margin-top: 26px;
+          width: 420px;
+          display:flex;
+          justify-content:center;
+        }
+
+        .hint{
+          margin-top: 10px;
+          width: 420px;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.35;
+          white-space: pre-wrap;
+        }
+
+        @media (max-width: 860px){
+          .top-row{ flex-direction:column; }
+          .left-col{ min-width: auto; }
+          .right-col{ align-items:flex-start; width:auto; }
+          .create-grid, .create-actions, .add-grid, .add-actions, .hint{ width: 100%; }
+          .create-grid{ grid-template-columns: 60px 90px 1fr; }
+          .add-grid{ grid-template-columns: 70px 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="wrap">
+
+    <div class="top-row">
+        <!-- LEFT: Create playlist -->
+        <div class="left-col">
+            <div class="section">
+                <h2>Create new playlist in Spotify</h2>
+
+                <div class="create-grid">
+                    <label for="fromBpm" style="justify-self:end;">from</label>
+                    <input id="fromBpm" type="number" min="1" step="1" style="width:60px;">
+                    <div class="bpm-suffix">bpm</div>
+
+                    <label for="toBpm" style="justify-self:end;">to</label>
+                    <input id="toBpm" type="number" min="1" step="1" style="width:60px;">
+                    <div class="bpm-suffix">bpm</div>
+                </div>
+
+                <div class="create-actions">
+                    <button class="btn primary" id="btnCreate" type="button">Create</button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- RIGHT: Buttons -->
+        <div class="right-col">
+            <a class="btn ghost" href="trainer.html">Return home</a>
+            <button class="btn" id="btnSpotify" type="button">Login Spotify</button>
+        </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Add new track -->
+    <div class="section">
+        <h2>Add new track from Spotify</h2>
+
+        <div class="add-grid">
+            <label for="link" style="justify-self:end;">Link</label>
+            <input id="link" class="wide" type="text" placeholder="https://..." />
+
+            <label for="bpm" style="justify-self:end;">Bpm</label>
+            <input id="bpm" type="number" min="1" step="1" style="width:60px;" />
+
+            <label for="artist" style="justify-self:end;">Artist</label>
+            <input id="artist" type="text" style="width:120px;" />
+
+            <label for="track" style="justify-self:end;">Track</label>
+            <input id="track" type="text" style="width:120px;" />
+
+            <label for="tags" style="justify-self:end;">Tags</label>
+            <input id="tags" type="text" style="width:160px;" placeholder="tag1, tag2" />
+        </div>
+
+        <div class="add-actions">
+            <button class="btn good" id="btnAdd" type="button">Add</button>
+        </div>
+
+        <div class="hint" id="statusBottom"></div>
+    </div>
+
+</div>
+
+<script>
+    const $ = (id) => document.getElementById(id);
+
+    const fromBpmEl = $("fromBpm");
+    const toBpmEl   = $("toBpm");
+    const btnCreate = $("btnCreate");
+
+    const linkEl   = $("link");
+    const bpmEl    = $("bpm");
+    const artistEl = $("artist");
+    const trackEl  = $("track");
+    const tagsEl   = $("tags");
+    const btnAdd   = $("btnAdd");
+
+    const btnSpotify    = $("btnSpotify");
+    const statusTop     = $("statusTop");
+    const statusBottom  = $("statusBottom");
+
+    function setTop(msg){ statusTop.textContent = msg; }
+    function setBottom(msg){ statusBottom.textContent = msg; }
+
+    function normalizeTags(value) {
+      if (!value || !value.trim()) return [];
+      return value.split(",").map(t => t.trim()).filter(Boolean);
+    }
+
+     function getCookie(name) {
+        const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+        return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    async function createPlaylist() {
+      const from = Number(fromBpmEl.value);
+      const to   = Number(toBpmEl.value);
+
+      if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= 0) {
+        setTop("Ошибка: from/to bpm должны быть положительными числами.");
+        return;
+      }
+      if (from > to) {
+        setTop("Ошибка: from bpm не может быть больше to bpm.");
+        return;
+      }
+
+      const url = `/music/playlist/${encodeURIComponent(from)}/${encodeURIComponent(to)}`;
+      setTop(`GET ${url} ...`);
+
+      try {
+        btnCreate.disabled = true;
+        const res = await fetch(url, { method: "GET" });
+        const text = await res.text();
+
+        if (!res.ok) {
+          setTop(`Ошибка ${res.status}: ${text}`);
+          return;
+        }
+
+        // Просто показываем ответ (чтобы было видно, что запрос отработал).
+        setTop(`Ок.\nОтвет:\n${text}`);
+      } catch (e) {
+        setTop(`Сетевая ошибка: ${e?.message || e}`);
+      } finally {
+        btnCreate.disabled = false;
+      }
+    }
+
+    async function addTrack() {
+      const link = String(linkEl.value || "").trim();
+      const bpm  = Number(bpmEl.value);
+      const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+      if (!link) {
+        setBottom("Ошибка: Link обязателен.");
+        return;
+      }
+      if (!Number.isFinite(bpm) || bpm <= 0) {
+        setBottom("Ошибка: bpm обязателен и должен быть положительным числом.");
+        return;
+      }
+
+      const payload = {
+        link: link,
+        bpm: Math.trunc(bpm),
+        artist: String(artistEl.value || ""),
+        title: String(trackEl.value || ""),
+        tagNames: normalizeTags(tagsEl.value)
+      };
+
+      setBottom(`POST /music/new_track ...\n${JSON.stringify(payload, null, 2)}`);
+
+      try {
+        btnAdd.disabled = true;
+        const res = await fetch("/music/new_track", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json",
+           "X-XSRF-TOKEN": csrf },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+        if (!res.ok) {
+          setBottom(`Ошибка ${res.status}: ${text}`);
+          return;
+        }
+
+        setBottom(`Добавлено.\nОтвет:\n${text}`);
+
+        // очистка
+        linkEl.value = "";
+        bpmEl.value = "";
+        artistEl.value = "";
+        trackEl.value = "";
+        tagsEl.value = "";
+      } catch (e) {
+        setBottom(`Сетевая ошибка: ${e?.message || e}`);
+      } finally {
+        btnAdd.disabled = false;
+      }
+    }
+
+    btnCreate.addEventListener("click", createPlaylist);
+    btnAdd.addEventListener("click", addTrack);
+
+    btnSpotify.addEventListener("click", () => {
+      alert("Spotify login: пока заглушка кнопки.");
+    });
+
+    setBottom("");
+</script>
+</body>
+</html>

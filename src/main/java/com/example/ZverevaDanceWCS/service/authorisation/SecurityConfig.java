@@ -45,7 +45,7 @@ public class SecurityConfig {
 
                         // защищённые статические страницы
                         .requestMatchers("/trainer.html").hasAnyRole("TRAINER", "ADMIN")
-                        .requestMatchers("/admin.html").hasRole("ADMIN")
+                        .requestMatchers("/admin.html", "/music.html").hasRole("ADMIN")
                         .requestMatchers("/user.html").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/calendar.html", "/calendar/**").permitAll() //todo может только для зарегистрированных? но скорее смотреть можно без регистрации, а букать с регистрацией
 
