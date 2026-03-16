@@ -3,6 +3,7 @@ package com.example.ZverevaDanceWCS.service.controller;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
+import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDTO;
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
@@ -15,10 +16,12 @@ import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
+
 import java.time.*;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,6 +43,30 @@ public class UserController {
         this.userService = userService;
         this.paymentService = paymentService;
         this.scheduleService = scheduleService;
+    }
+
+    @PostMapping("/confirm_lesson/{lessonId}")
+    public LessonUserDTO confirmLesson(@PathVariable Long lessonId, HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        Lesson lesson = lessonService.findById(lessonId);
+        if (lesson.getStudent().getId() != userId) {
+            throw new RuntimeException("User is not a student of this lesson");
+        }
+        return new LessonUserDTO(lessonService.confirmLesson(lessonId, LessonStatus.PENDING_STUDENT_CONFIRMATION));
+    }
+
+    @PostMapping("/cancel_lesson/{lessonId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelLesson(@PathVariable Long lessonId, HttpSession session) {
+        int userId = (int) session.getAttribute("USER_ID");
+        Lesson lesson = lessonService.findById(lessonId);
+        if (lesson.getStudent().getId() != userId) {
+            throw new RuntimeException("User is not a student of this lesson");
+        }
+        if (lesson.getStatus()!=LessonStatus.PENDING_STUDENT_CONFIRMATION&&lesson.getStatus()!=LessonStatus.PENDING_TRAINER_CONFIRMATION) {
+            throw new RuntimeException("Lesson cannot be canceled at this stage");
+        }
+        lessonService.cancelLesson(lesson);
     }
 
     //User endpoint, update details
@@ -65,7 +92,7 @@ public class UserController {
     @GetMapping("/my_info")
     public UserUpdateByUserDto getUserDetails(HttpSession session) {
         int userId = (int) session.getAttribute("USER_ID");
-        List<ScheduleShortDTO> schedules=scheduleService.findByStudent(userId)
+        List<ScheduleShortDTO> schedules = scheduleService.findByStudent(userId)
                 .stream()
                 .map(Schedule::toShortDto)
                 .toList();
@@ -98,10 +125,10 @@ public class UserController {
         List<Payment> payments = paymentService.findByStudentAndPeriod(userId, start, end);
 
         List<TransactionDataDao> result = new ArrayList<>();
-        result= Stream.concat(
-                lessons.stream().map(lesson -> TransactionDataDao.fromLesson(lesson)),
-                payments.stream().map(payment -> TransactionDataDao.fromPayment(payment))
-        ).sorted(Comparator.comparing(TransactionDataDao::getDate))
+        result = Stream.concat(
+                        lessons.stream().map(lesson -> TransactionDataDao.fromLesson(lesson)),
+                        payments.stream().map(payment -> TransactionDataDao.fromPayment(payment))
+                ).sorted(Comparator.comparing(TransactionDataDao::getDate))
                 .toList();
         return result;
     }

@@ -11,6 +11,7 @@ import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDT
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUpdateDto;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
+import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
@@ -49,9 +50,10 @@ public class TrainerController {
     final InfoService infoService;
     final ScheduleService scheduleService;
     final CalendarEventService calendarEventService;
+    final TrainerStudentService trainerStudentService;
 
 
-    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramStudentBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService) {
+    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramStudentBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
@@ -59,7 +61,20 @@ public class TrainerController {
         this.infoService = infoService;
         this.scheduleService = scheduleService;
         this.calendarEventService = calendarEventService;
+        this.trainerStudentService = trainerStudentService;
     }
+
+    @PostMapping("new_user/{name}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addNewUser(@PathVariable String name, HttpSession session) {
+        if (name.isBlank()) {
+            throw new RuntimeException("Name cannot be blank");
+        }
+        User trainer = findTrainerFromSession(session);
+        User newUser = userService.newUser(name);
+        trainerStudentService.saveLink(trainer, newUser);
+    }
+
 
     // Admin endpoints, user details by id
     @GetMapping("/user/{id}")
@@ -111,7 +126,7 @@ public class TrainerController {
     public List<UserShortDTO> getUsers(HttpSession session) {
         User trainer = findTrainerFromSession(session);
         log.info("trainer id=" + trainer.getId() + "trainer name " + trainer.getName() + " requested students list");
-        List<User> students = userService.findAllByRoleAndTrainerId(null, trainer.getId());
+        List<User> students = userService.findAllByRoleInAndTrainerId(List.of(UserRole.BY_REQUEST, UserRole.PERMANENT, UserRole.TRAINER), trainer.getId());
         log.info("Found " + students.size() + " students for trainer id=" + trainer.getId());
         return students.stream().map(UserShortDTO::toShortDTO).toList();
     }
@@ -229,7 +244,13 @@ public class TrainerController {
 
     // Admin endpoint, mark lesson as completed
     @PutMapping("/lesson/completed/{id}")
-    public LessonFullDTO markLessonAsCompleted(@PathVariable Long id) {
+    public LessonFullDTO markLessonAsCompleted(@PathVariable Long id, @RequestBody(required = false) String newInfo, HttpSession session) {
+        if (newInfo!=null&&!newInfo.isBlank()) {
+            Lesson lesson = lessonService.findById(id);
+            NewInfoDTO newInfoDTO = new NewInfoDTO(lesson.getStudent().getId(), newInfo);
+            User trainer = findTrainerFromSession(session);
+            infoService.saveFromNewInfoDTO(newInfoDTO, trainer.getId());
+        }
         return LessonFullDTO.toFullDTO(lessonService.lessonCompleted(lessonService.findById(id)));
     }
 

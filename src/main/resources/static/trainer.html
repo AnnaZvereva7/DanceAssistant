@@ -117,6 +117,38 @@
         .hidden {
             display: none;
         }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 420px;
+            max-width: 90%;
+        }
+
+        #lessonInfoInput {
+            width: 100%;
+            min-height: 120px;
+            margin-top: 12px;
+            margin-bottom: 12px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
     </style>
 </head>
 
@@ -148,6 +180,11 @@
     <div class="left-panel">
         <div id="studentsTab" class="hidden">
             <ul id="studentsList"></ul>
+            <button id="newStudentBtn">Add new student</button>
+            <div id="newStudentForm" style="display:none; margin-top:10px;">
+                <input type="text" id="newStudentName" placeholder="Student name">
+                <button id="submitStudentBtn">Add</button>
+            </div>
         </div>
         <div id="lessonsTab" class="hidden">
             <ul id="lessonsListCompleted"></ul>
@@ -171,7 +208,7 @@
             <label> Calendar link:
                 <input type="text" id="calendarLink"></input>
             </label>
-            <button id="refreshCalendarLink">Refresh calendar link</button>
+            <button id="refreshCalendarLinkBtn">Refresh calendar link</button>
         </div>
         <div id="studentDetails" class="hidden">
             <h3>Student details</h3>
@@ -213,7 +250,7 @@
             <button id="newLessonBtn">NewLesson</button>
             <button id="newInfoBtn">NewInfo</button>
             <button id="saveChangesStudentBtn">SaveChanges</button>
-
+<!--сделать всплывающим окном-->
             <div id="newLessonDetails" class="hidden">
                 <h3>New Lesson Details</h3>
                 <label>Start Time(01.01.2026 10:00):
@@ -231,6 +268,8 @@
                 </label>
                 <button id="addNewLessonBtn">Add</button>
             </div>
+<!--            конец всплывающего окна -->
+<!--            новое всплывающее окно -->
             <div id="newInfoDetails" class="hidden">
                 <h3>New Info Details</h3>
                 <label>Plans:
@@ -238,6 +277,7 @@
                 </label>
                 <button id="addNewInfoBtn">Add</button>
             </div>
+<!--            конец всплывающего окна-->
         </div>
 
         <div id="lessonDetails" class="hidden">
@@ -265,6 +305,16 @@
             </label>
 
             <button id="completeLessonBtn">Completed</button>
+            <div id="completeLessonModal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Add info</h3>
+                    <textarea id="lessonInfoInput" placeholder="Add info"></textarea>
+                    <div class="modal-actions">
+                        <button id="nextBtn">Next</button>
+                        <button id="closeModalBtn" type="button">Cancel</button>
+                    </div>
+                </div>
+            </div>
             <button id="cancelLessonBtn">Cancel</button>
             <button id="saveChangesLessonBtn">Save Changes</button>
             <button id="toStudent">Student Info</button>
@@ -300,17 +350,40 @@
 <script>
     const API_BASE = "http://localhost:8080/trainer"; // поменяйте если другой порт
 
+    const loadMyInfoBtn =document.getElementById("loadMyInfoBtn");
+    const myDetails = document.getElementById("myDetails");
+    const refreshCalendarLinkBtn = document.getElementById("refreshCalendarLinkBtn");
+    const loadLessonsBtn = document.getElementById("loadLessonsBtn");
+    const lessonsTab = document.getElementById("lessonsTab");
+    const lessonDetails = document.getElementById("lessonDetails");
+    const completeLessonBtn = document.getElementById("completeLessonBtn");
+    const completeLessonModal = document.getElementById("completeLessonModal");
+    const nextBtn = document.getElementById("nextBtn");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+    const lessonInfoInput = document.getElementById("lessonInfoInput");
+    const loadStudentsBtn = document.getElementById("loadStudentsBtn");
+    const studentsTab = document.getElementById("studentsTab");
+    const studentDetails = document.getElementById("studentDetails");
+    const paymentTab = document.getElementById("paymentTab");
+    const paymentDetails = document.getElementById("paymentDetails");
+    const addNewLessonBtn = document.getElementById("addNewLessonBtn");
+    const addNewInfoBtn = document.getElementById("addNewInfoBtn");
+    const saveChangesStudentBtn = document.getElementById("saveChangesStudentBtn");
+
+
+
+
     /* загрузка информации тренера */
-    document.getElementById("loadMyInfoBtn").addEventListener("click", loadMyInfo);
+    loadMyInfoBtn.addEventListener("click", loadMyInfo);
     /* Показать информацию тренера*/
-    document.getElementById("loadMyInfoBtn").addEventListener("click", () => {
-        document.getElementById("myDetails").classList.remove("hidden");
-        document.getElementById("lessonsTab").classList.add("hidden");
-        document.getElementById("lessonDetails").classList.add("hidden");
-        document.getElementById("studentDetails").classList.add("hidden");
-        document.getElementById("paymentTab").classList.add("hidden");
-        document.getElementById("paymentDetails").classList.add("hidden");
-        document.getElementById("studentsTab").classList.add("hidden");
+    loadMyInfoBtn.addEventListener("click", () => {
+        myDetails.classList.remove("hidden");
+        lessonsTab.classList.add("hidden");
+        lessonDetails.classList.add("hidden");
+        studentDetails.classList.add("hidden");
+        paymentTab.classList.add("hidden");
+        paymentDetails.classList.add("hidden");
+        studentsTab.classList.add("hidden");
     });
 
     async function loadMyInfo() {
@@ -322,14 +395,14 @@
             document.getElementById("userEmail").value = trainer.email ?? "";
             document.getElementById("calendarLink").value = trainer.link ?? "";
 
-            document.getElementById("myDetails").classList.remove("hidden");
+           myDetails.classList.remove("hidden");
         } catch (error) {
             console.error("Error loading my details:", error);
              alert("Failed to load data.");
         }
     }
 
-    document.getElementById("refreshCalendarLink").addEventListener("click", refreshLink);
+    refreshCalendarLinkBtn.addEventListener("click", refreshLink);
 
     async function refreshLink() {
         try {
@@ -345,43 +418,63 @@
     }
 
     /* загрузка списка студентов по кнопке Students */
-    document.getElementById("loadStudentsBtn").addEventListener("click", loadStudents);
+    loadStudentsBtn.addEventListener("click", loadStudents);
     /* Показать студентов — скрыть уроки и платежи*/
-    document.getElementById("loadStudentsBtn").addEventListener("click", () => {
-        document.getElementById("studentsTab").classList.remove("hidden");
-        document.getElementById("lessonsTab").classList.add("hidden");
-        document.getElementById("lessonDetails").classList.add("hidden");
-        document.getElementById("studentDetails").classList.add("hidden");
-        document.getElementById("paymentTab").classList.add("hidden");
-        document.getElementById("paymentDetails").classList.add("hidden");
-        document.getElementById("myDetails").classList.add("hidden");
+    loadStudentsBtn.addEventListener("click", () => {
+        studentsTab.classList.remove("hidden");
+        lessonsTab.classList.add("hidden");
+        lessonDetails.classList.add("hidden");
+        studentDetails.classList.add("hidden");
+       paymentTab.classList.add("hidden");
+       paymentDetails.classList.add("hidden");
+        myDetails.classList.add("hidden");
     });
     /*выведение на экран формы добавоения нового урока */
-    document.getElementById("addNewLessonBtn").addEventListener("click", addLesson);
+    addNewLessonBtn.addEventListener("click", addLesson);
     document.getElementById("newLessonBtn").addEventListener("click", () => {
         document.getElementById("newLessonDetails").classList.remove("hidden");
-        document.getElementById("studentDetails").classList.remove("hidden");
+        studentDetails.classList.remove("hidden");
         document.getElementById("newInfoDetails").classList.add("hidden");
     });
     /*todo выведение на экран формы информации(планы и что делали) */
-    document.getElementById("addNewInfoBtn").addEventListener("click", addInfo);
+    addNewInfoBtn.addEventListener("click", addInfo);
     document.getElementById("newInfoBtn").addEventListener("click", () => {
         document.getElementById("newInfoDetails").classList.remove("hidden");
-        document.getElementById("studentDetails").classList.remove("hidden");
-        document.getElementById("newLessonDetails").classList.add("hidden");
+        studentDetails.classList.remove("hidden");
+        newLessonDetails.classList.add("hidden");
     });
     /*todo сохранение изменений студента */
-    document.getElementById("saveChangesStudentBtn").addEventListener("click", saveChangesStudent);
-    document.getElementById("saveChangesStudentBtn").addEventListener("click", () => {
+    saveChangesStudentBtn.addEventListener("click", saveChangesStudent);
+   saveChangesStudentBtn.addEventListener("click", () => {
         document.getElementById("newInfoDetails").classList.add("hidden");
         document.getElementById("newLessonDetails").classList.add("hidden");
     });
 
     /*выведение двух списков уроков по кновке Lessons*/
-    document.getElementById("loadLessonsBtn").addEventListener("click", loadLessonsCompleted);
-    document.getElementById("loadLessonsBtn").addEventListener("click", loadLessonsPlanned);
+    loadLessonsBtn.addEventListener("click", loadLessonsCompleted);
+    loadLessonsBtn.addEventListener("click", loadLessonsPlanned);
     /*завершение урока по кнопке Completed*/
-    document.getElementById("completeLessonBtn").addEventListener("click", completeLesson);
+
+    completeLessonBtn.addEventListener("click", () => {
+        lessonInfoInput.value = "";
+        completeLessonModal.classList.remove("hidden");
+    });
+
+    nextBtn.addEventListener("click", async () => {
+        const newInfo = lessonInfoInput.value.trim();
+
+        try {
+            await completeLesson(newInfo);
+            modal.classList.add("hidden");
+        } catch (e) {
+            console.error("Ошибка при завершении урока:", e);
+            alert("Не удалось завершить урок");
+        }
+    });
+
+    closeModalBtn.addEventListener("click", () => {
+        modal.classList.add("hidden");
+    });
     /*отмена урока по кнопке Cancel*/
     document.getElementById("cancelLessonBtn").addEventListener("click", cancelLesson);
     /*todo сохранение изменений урока по кнопке SaveChanges*/
@@ -390,41 +483,86 @@
     document.getElementById("toStudent").addEventListener("click", () => {
         const studentId = document.getElementById("lessonStudentId").value;
         loadStudentDetails(studentId);
-        document.getElementById("studentDetails").classList.remove("hidden");
-        document.getElementById("lessonDetails").classList.add("hidden");
+       studentDetails.classList.remove("hidden");
+        lessonDetails.classList.add("hidden");
         document.getElementById("newLessonDetails").classList.add("hidden");
         document.getElementById("newInfoDetails").classList.add("hidden");
     });
 
 
     /* Показать уроки — скрыть студентов и платежи*/
-    document.getElementById("loadLessonsBtn").addEventListener("click", () => {
-        document.getElementById("lessonsTab").classList.remove("hidden");
-        document.getElementById("studentsTab").classList.add("hidden");
-        document.getElementById("paymentTab").classList.add("hidden");
-        document.getElementById("studentDetails").classList.add("hidden");
-        document.getElementById("lessonDetails").classList.add("hidden");
-        document.getElementById("paymentDetails").classList.add("hidden");
+    loadLessonsBtn.addEventListener("click", () => {
+       lessonsTab.classList.remove("hidden");
+        studentsTab.classList.add("hidden");
+       paymentTab.classList.add("hidden");
+       studentDetails.classList.add("hidden");
+        lessonDetails.classList.add("hidden");
+        completeLessonModal.classList.add("hidden");
+        paymentDetails.classList.add("hidden");
         document.getElementById("newLessonDetails").classList.add("hidden");
-        document.getElementById("myDetails").classList.add("hidden");
+        myDetails.classList.add("hidden");
     });
 
     /* вкладка с платежами */
     document.getElementById("loadPaymentBtn").addEventListener("click", loadPayments);
      /* Показать платежи — скрыть студентов и уроки*/
     document.getElementById("loadPaymentBtn").addEventListener("click", () => {
-        document.getElementById("paymentTab").classList.remove("hidden");
-        document.getElementById("studentsTab").classList.add("hidden");
-        document.getElementById("studentDetails").classList.add("hidden");
-        document.getElementById("lessonDetails").classList.add("hidden");
-        document.getElementById("paymentDetails").classList.add("hidden");
-        document.getElementById("lessonsTab").classList.add("hidden");
+        paymentTab.classList.remove("hidden");
+        studentsTab.classList.add("hidden");
+        studentDetails.classList.add("hidden");
+       lessonDetails.classList.add("hidden");
+        paymentDetails.classList.add("hidden");
+        lessonsTab.classList.add("hidden");
         document.getElementById("newLessonDetails").classList.add("hidden");
-        document.getElementById("myDetails").classList.add("hidden");
+        myDetails.classList.add("hidden");
     });
 
     document.getElementById("sendBillBtn").addEventListener("click", sendBill);
     document.getElementById("paidBtn").addEventListener("click", addPayment);
+
+    const newStudentBtn = document.getElementById("newStudentBtn");
+    const form = document.getElementById("newStudentForm");
+    const submitBtn = document.getElementById("submitStudentBtn");
+
+    newStudentBtn.addEventListener("click", () => {
+        form.style.display = "block";
+    });
+
+    submitBtn.addEventListener("click", async () => {
+
+        const name = document.getElementById("newStudentName").value.trim();
+
+        if (!name) {
+            alert("Enter student name");
+            return;
+        }
+
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+        try {
+            const response = await fetch(`/trainer/new_user/${encodeURIComponent(name)}`, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                }
+            });
+
+            if (response.ok) {
+                alert("Student added");
+                form.style.display = "none";
+                document.getElementById("newStudentName").value = "";
+            } else {
+                alert("Error adding student");
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Request failed");
+        }
+
+    });
 
 
 
@@ -701,13 +839,14 @@ let currentStudentId = null;
             document.getElementById("newLessonDetails").classList.add("hidden");
             document.getElementById("newInfoDetails").classList.add("hidden");
             document.getElementById("lessonDetails").classList.remove("hidden");
+            completeLessonModal.classList.add("hidden");
         } catch (error) {
             console.error("Error loading lesson:", error);
         }
     }
 
 
-    async function completeLesson() {
+    async function completeLesson(newInfo) {
       const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
         const id = document.getElementById("lessonId").value;
         if (!id) {
@@ -719,8 +858,10 @@ let currentStudentId = null;
                 method: "PUT",
                 credentials: "same-origin",
                 headers: {
+                "Content-Type": "text/plain",
                     "X-XSRF-TOKEN": csrf
-                }
+                },
+                 body: newInfo
             });
             if (!response.ok) {
                 console.error("Error completing lesson:", response.status, response.statusText);

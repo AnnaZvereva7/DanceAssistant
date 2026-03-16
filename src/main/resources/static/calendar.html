@@ -39,6 +39,18 @@
           border-radius: 10px;
           cursor: pointer;
         }
+        .btn-add {
+          padding: 8px 12px;
+          border: none;
+          background: linear-gradient(180deg, rgba(126,231,135,.95), rgba(126,231,135,.65));
+          color:#04120a;
+          border-radius: 10px;
+          cursor: pointer;
+        }
+
+        .btn-add:hover{
+          background: linear-gradient(180deg, rgba(126,231,135,1), rgba(126,231,135,.8));
+        }
 
         select {
           padding: 8px 10px;
@@ -97,7 +109,6 @@
 
 <body>
 <div class="legend">
-    <div id="modeText">Calendar</div>
     <div class="chips">
         <div class="chip"><span class="dot" style="background:#b3ffb3;"></span> FREE</div>
         <div class="chip"><span class="dot" style="background:#b3d9ff;"></span> BOOKED</div>
@@ -107,13 +118,7 @@
         <button id="btnReload" type="button">Refresh</button>
         <button id="btnToMain" type="button">Back to Home</button>
         <button id="btnLogin" style="display:none;">Login</button>
-    </div>
-</div>
-
-<div class="legend" id="studentActions" style="display:none;">
-    <div>Student Actions</div>
-    <div>
-        <button id="btnAddLesson" type="button">Add Lesson</button>
+        <button id="btnAddLesson" style="display:none;" type="button" class="btn-add">Add Lesson</button>
     </div>
 </div>
 
@@ -494,7 +499,6 @@
       const btnToMain = document.getElementById('btnToMain');
       const modeTextEl = document.getElementById('modeText');
       const btnReload = document.getElementById('btnReload');
-      const studentActions = document.getElementById('studentActions');
       const btnAddLesson = document.getElementById('btnAddLesson');
       const btnLogin = document.getElementById('btnLogin');
 
@@ -522,19 +526,17 @@
         else eventsUrl = '/calendar/user';
 
       if (isTrainer) {
-        modeTextEl.textContent = 'Trainer Mode: Select a time range with your mouse to add a FREE slot or a New Lesson.';
         btnLogin.style.display = 'none';
-        studentActions.style.display = 'none';
+        btnAddLesson.style.display = 'none';
       } else if (isStudent) {
-        modeTextEl.textContent = 'Student Mode: Lessons marked TO_CONFIRM can be confirmed or canceled.\nBOOKED lessons can be deleted or rescheduled.\nUse “Add Lesson” to select a trainer and time.';
         btnLogin.style.display = 'none';
-        studentActions.style.display = 'flex';
+        btnAddLesson.style.display = 'flex';
       } else if (isUnauthorized) {
         modeTextEl.textContent = 'Public view: trainer free slots';
          btnReload.style.display = 'none';
          btnToMain.style.display = 'none';
          btnLogin.style.display = 'inline-block';
-        studentActions.style.display = 'none';
+        btnAddLesson.style.display = 'none';
         const urlParams = new URLSearchParams(location.search);
         const token = urlParams.get("token");
         btnLogin.addEventListener('click', () => {
@@ -780,7 +782,7 @@
                 return;
               }
 
-              if (status === 'BOOKED'||status === 'PENDING_TRAINER_CONFIRMATION') {
+              if (status === 'PENDING_TRAINER_CONFIRMATION') {
                 showModal(
                   'Booked lesson',
                   `
@@ -804,6 +806,41 @@
                     showError('Failed to delete the lesson:\n' + err.message);
                   }
                 });
+
+                document.getElementById('btnMove').addEventListener('click', async () => {
+                  if (!trainerId) {
+                    showError('The event does not contain extendedProps.trainerId. The trainerId is required for rescheduling.');
+                    return;
+                  }
+                  try {
+                    await openFreeSlotsCalendar({
+                      trainerId,
+                      title: `Select a new available slot (trainer #${trainerId})`,
+                      onPick: async (lessonTimeRequest) => {
+                        await studentChangeLesson(lessonId, lessonTimeRequest);
+                        calendar.refetchEvents();
+                      }
+                    });
+                  } catch (err) {
+                    showError('Failed to reschedule\n' + err.message);
+                  }
+                });
+
+                return;
+              }
+
+              if (status === 'BOOKED') {
+              showModal(
+                  'Booked lesson',
+                  `
+                    <div><b>${ev.title}</b></div>
+                    <div class="smallNote">${ev.start?.toLocaleString()} — ${ev.end?.toLocaleString()}</div>
+                    <div class="actionRow">
+                      <button id="btnMove" type="button">Reschedule</button>
+                    </div>
+                    <div class="smallNote">To reschedule, select a new available slot with this trainer, then choose the exact time within it.</div>
+                  `
+                );
 
                 document.getElementById('btnMove').addEventListener('click', async () => {
                   if (!trainerId) {

@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
-@Controller
+@RestController
 @Slf4j
 public class SessionApiController {
 

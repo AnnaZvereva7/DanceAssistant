@@ -49,6 +49,8 @@ public class UserService {
         newUser.setName(name);
         newUser.setRole(UserRole.BY_REQUEST);
         newUser.setBalance(0);
+        newUser.setMessenger(Messenger.NONE);
+        newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
         return userRepository.save(newUser);
     }
 

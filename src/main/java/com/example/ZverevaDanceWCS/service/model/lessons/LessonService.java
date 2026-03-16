@@ -261,6 +261,9 @@ public class LessonService {
     @Transactional
     public Lesson confirmLesson(Long lessonId, LessonStatus status) {
         Lesson lesson = findById(lessonId);
+        if (lesson.getStatus()!=LessonStatus.PENDING_STUDENT_CONFIRMATION&&lesson.getStatus()!=LessonStatus.PENDING_TRAINER_CONFIRMATION) {
+            throw new RuntimeException("Lesson in this status cannot be confirmed");
+        }
         if (lesson.getStatus() == status) {
             lesson.setStatus(LessonStatus.PLANNED);
             lesson = lessonsRepository.save(lesson);

@@ -5,16 +5,17 @@
     <title>DanceAssistant - UserPage</title>
     <style>
         :root{
-          --bg:#0b1020;
-          --card:#121a33;
-          --card2:#0f1730;
-          --text:#e9ecf5;
-          --muted:#aab3d4;
-          --border:rgba(255,255,255,.10);
-          --shadow: 0 10px 30px rgba(0,0,0,.35);
+          --bg:#f6f8fc;
+          --card:#ffffff;
+          --card2:#f9fbff;
+          --text:#1f2937;
+          --muted:#6b7280;
+          --border:rgba(15,23,42,.12);
+          --shadow:0 10px 30px rgba(15,23,42,.08);
           --radius:16px;
-          --accent:#6ea8fe;
-          --accent2:#7ee787;
+          --accent:#3b82f6;
+          --accent2:#22c55e;
+          --status-bg:#f3f4f6;
         }
 
         *{box-sizing:border-box}
@@ -22,9 +23,10 @@
           margin:0;
           font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
           color:var(--text);
-          background: radial-gradient(1200px 600px at 10% 0%, rgba(110,168,254,.18), transparent 60%),
-                      radial-gradient(900px 500px at 90% 20%, rgba(126,231,135,.14), transparent 55%),
-                      var(--bg);
+          background:
+              radial-gradient(1200px 600px at 10% 0%, rgba(59,130,246,.10), transparent 60%),
+              radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.08), transparent 55%),
+              var(--bg);
           min-height:100vh;
           padding:24px;
         }
@@ -47,7 +49,7 @@
           justify-content:space-between;
           gap:16px;
           padding:16px 18px;
-          background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+          background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,252,.92));
           border:1px solid var(--border);
           border-radius: var(--radius);
           box-shadow: var(--shadow);
@@ -73,7 +75,7 @@
         .logout-btn{
           appearance:none;
           border:1px solid var(--border);
-          background: rgba(255,255,255,.04);
+           background:#fff;
           color: var(--text);
           padding:10px 14px;
           border-radius: 12px;
@@ -92,7 +94,7 @@
         }
         .tab-btn{
           border:1px solid var(--border);
-          background: rgba(255,255,255,.03);
+          background:#fff;
           color: var(--text);
           padding:10px 14px;
           border-radius: 999px;
@@ -102,9 +104,9 @@
         }
         .tab-btn:hover{ border-color: rgba(255,255,255,.18); transform: translateY(-1px); }
         .tab-btn.active{
-          background: linear-gradient(180deg, rgba(110,168,254,.25), rgba(110,168,254,.12));
-          border-color: rgba(110,168,254,.55);
-          box-shadow: 0 10px 24px rgba(110,168,254,.12);
+         background: linear-gradient(180deg, rgba(59,130,246,.16), rgba(59,130,246,.08));
+          border-color: rgba(59,130,246,.35);
+          box-shadow: 0 10px 24px rgba(59,130,246,.10);
         }
 
         /* Content cards */
@@ -113,7 +115,7 @@
         }
         .tab{
           display:none;
-          background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+          background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
           border:1px solid var(--border);
           border-radius: var(--radius);
           box-shadow: var(--shadow);
@@ -147,7 +149,7 @@
         input, select, textarea{
           width:100%;
           border:1px solid var(--border);
-          background: rgba(10,14,30,.55);
+           background:#fff;
           color: var(--text);
           border-radius: 12px;
           padding:10px 12px;
@@ -182,7 +184,7 @@
 
         .secondary-btn{
           border:1px solid var(--border);
-          background: rgba(255,255,255,.04);
+           background:#fff;
           color: var(--text);
           font-weight:700;
           padding:10px 14px;
@@ -191,6 +193,21 @@
           transition:.15s ease;
         }
         .secondary-btn:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.18); }
+
+        .danger-btn{
+          background: linear-gradient(180deg, rgba(239,68,68,.18), rgba(239,68,68,.10));
+          border:none;
+          color:#b91c1c;
+          font-weight:800;
+          padding:10px 14px;
+          border-radius: 12px;
+          cursor:pointer;
+          transition:.15s ease;
+        }
+
+        .danger-btn:hover{
+          transform: translateY(-1px);
+        }
 
         /* Schedule list */
         #schedule{
@@ -205,20 +222,49 @@
           padding:12px 12px;
           border:1px solid var(--border);
           border-radius: 12px;
-          background: rgba(255,255,255,.03);
+          background:#fff;
           display:flex;
           justify-content:space-between;
           align-items:center;
           gap:12px;
         }
-        .pill{
+
+        .schedule-main{
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:16px;
+          width:100%;
+        }
+
+        .lesson-info{
+          display:flex;
+          align-items:center;
+          gap:12px;
+          flex-wrap:wrap;
+          min-width:0;
+        }
+
+        .lesson-datetime{
+          font-weight:600;
+        }
+
+        .lesson-status{
           font-size:12px;
-          padding:4px 10px;
+          padding:6px 10px;
           border-radius:999px;
           border:1px solid var(--border);
-          color: var(--muted);
-          background: rgba(255,255,255,.02);
+          color:var(--muted);
+          background:var(--status-bg);
           white-space:nowrap;
+        }
+
+        .lesson-actions{
+          display:flex;
+          align-items:center;
+          gap:8px;
+          margin-left:auto;
+          flex-shrink:0;
         }
 
         /* Small helper */
@@ -255,7 +301,7 @@
             <h3>Schedule</h3>
             <ul id="schedule"></ul>
             <div class="actions">
-                <button id="newLessonBtn" class="secondary-btn">Add New Lesson</button>
+                <button id="newLessonBtn" class="primary-btn">Add New Lesson</button>
             </div>
         </div>
 
@@ -422,16 +468,56 @@
         lessons.forEach(lesson => {
           const li = document.createElement("li");
 
-          const left = document.createElement("div");
-          left.textContent = `${lesson.dateTime}`;
+          const wrapper = document.createElement("div");
+          wrapper.className = "schedule-main";
 
-          const right = document.createElement("span");
-          right.className = "pill";
-          right.textContent = lesson.status ?? "UNKNOWN";
+          const info = document.createElement("div");
+          info.className = "lesson-info";
 
-          li.appendChild(left);
-          li.appendChild(right);
-          list.appendChild(li);
+          const date = document.createElement("div");
+          date.className = "lesson-datetime";
+          date.textContent = lesson.dateTime;
+
+          const status = document.createElement("div");
+          status.className = "lesson-status";
+
+          const actions = document.createElement("div");
+          actions.className = "lesson-actions";
+
+          if (lesson.status === "PENDING_STUDENT_CONFIRMATION") {
+                status.textContent = "Status: PENDING_STUDENT_CONFIRMATION";
+                const confirmBtn = document.createElement("button");
+                confirmBtn.textContent = "Confirm";
+                confirmBtn.className = "primary-btn";
+                confirmBtn.onclick = () => confirmLesson(lesson.id);
+
+                const cancelBtn = document.createElement("button");
+                cancelBtn.textContent = "Cancel";
+                cancelBtn.className = "danger-btn";
+                cancelBtn.onclick = () => cancelLesson(lesson.id);
+
+                actions.appendChild(confirmBtn);
+                actions.appendChild(cancelBtn);
+          } else if (lesson.status === "PENDING_TRAINER_CONFIRMATION") {
+                status.textContent = "Status: PENDING_TRAINER_CONFIRMATION";
+                const cancelBtn = document.createElement("button");
+                cancelBtn.textContent = "Cancel";
+                cancelBtn.className = "danger-btn";
+                cancelBtn.onclick = () => cancelLesson(lesson.id);
+
+                actions.appendChild(cancelBtn);
+          } else {
+                status.textContent  = "Status: " + lesson.status ?? "Unknown";
+          }
+
+        info.appendChild(date);
+        info.appendChild(status);
+
+        wrapper.appendChild(info);
+        wrapper.appendChild(actions);
+
+        li.appendChild(wrapper);
+        list.appendChild(li);
         });
 
       } catch (error) {
@@ -439,6 +525,60 @@
         list.innerHTML = "<li>Error loading lessons</li>";
       }
     }
+
+    async function confirmLesson(id) {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+        try {
+            const res = await fetch(`/user/confirm_lesson/${id}`, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to confirm lesson");
+            }
+
+            console.log("Lesson confirmed:", id);
+            loadSchedule();
+
+        } catch (err) {
+            console.error("Confirm error:", err);
+            alert("Error confirming lesson");
+        }
+    }
+
+    async function cancelLesson(id) {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+        try {
+            const res = await fetch(`/user/cancel_lesson/${id}`, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error("Failed to cancel lesson");
+            }
+
+            console.log("Lesson cancelled:", id);
+            loadSchedule();
+
+        } catch (err) {
+            console.error("Cancel error:", err);
+            alert("Error cancelling lesson");
+        }
+    }
+
+
 
     async function loadThisUser() {
       try {
