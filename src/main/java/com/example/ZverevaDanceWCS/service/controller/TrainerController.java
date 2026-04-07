@@ -126,7 +126,7 @@ public class TrainerController {
     public List<UserShortDTO> getUsers(HttpSession session) {
         User trainer = findTrainerFromSession(session);
         log.info("trainer id=" + trainer.getId() + "trainer name " + trainer.getName() + " requested students list");
-        List<User> students = userService.findAllByRoleInAndTrainerId(List.of(UserRole.BY_REQUEST, UserRole.PERMANENT, UserRole.TRAINER), trainer.getId());
+        List<User> students = userService.findAllByRoleInAndTrainerId(List.of(UserRole.BY_REQUEST, UserRole.PERMANENT, UserRole.TRAINER, UserRole.GROUP), trainer.getId());
         log.info("Found " + students.size() + " students for trainer id=" + trainer.getId());
         return students.stream().map(UserShortDTO::toShortDTO).toList();
     }

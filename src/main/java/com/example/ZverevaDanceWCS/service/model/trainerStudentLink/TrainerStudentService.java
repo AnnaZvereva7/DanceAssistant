@@ -34,7 +34,7 @@ public class TrainerStudentService {
         return links
                 .stream()
                 .map(TrainerStudentLink::fromLinkGetStudent)
-                .filter(user -> user.getRole()== UserRole.BY_REQUEST||user.getRole()==UserRole.PERMANENT)
+                .filter(user -> user.getRole()== UserRole.BY_REQUEST||user.getRole()==UserRole.PERMANENT||user.getRole()==UserRole.GROUP)
                 .toList();
     }
 

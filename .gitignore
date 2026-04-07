@@ -34,4 +34,6 @@ build/
 
 # Игнорировать файл с учетными данными
 dance-assistant-3923a1813a21.json
+dance_classes_secret.json
 secret.properties
+secret.prod.properties

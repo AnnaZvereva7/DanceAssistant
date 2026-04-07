@@ -134,9 +134,9 @@ public class CalendarController {
         Long lessonId=calendarEventService.extractEventId(eventId, "lesson");
         Lesson lesson = lessonService.findById(lessonId);
         lessonService.cancelLesson(lesson);
-        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
-            telegramTrainerBot.send(lesson.getStudent().getChatId(), "Lesson cancelled: " + lesson.getStartTime().format(Constant.formatterDayTime));
-        }
+//        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
+//            telegramStudentBot.send(lesson.getStudent().getChatId(), "Lesson cancelled: " + lesson.getStartTime().format(Constant.formatterDayTime));
+//        }
     }
 
     @GetMapping("user/get_free_slots/{trainerId}")
