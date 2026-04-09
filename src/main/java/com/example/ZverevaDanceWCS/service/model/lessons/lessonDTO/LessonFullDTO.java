@@ -11,7 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class LessonFullDTO {
     private Long id;
-    private int studentId;
+    private Long studentId;
     private String studentName;
     private String startTime;
     private LessonStatus status;

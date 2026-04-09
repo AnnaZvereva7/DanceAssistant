@@ -303,6 +303,10 @@
             <div class="actions">
                 <button id="newLessonBtn" class="primary-btn">Add New Lesson</button>
             </div>
+<div class="actions">
+            <button id="getTelegramLinkStudentBtn" class="primary-btn">Get Telegram Link</button>
+            <a id="tgLink" target="_blank"></a>
+</div>
         </div>
 
         <div id="studentDetails" class="tab">
@@ -436,6 +440,7 @@
     });
 
     document.getElementById("newLessonBtn").addEventListener("click", addNewLesson);
+    document.getElementById("getTelegramLinkStudentBtn").addEventListener("click", getTelegramLinkStudent);
     document.getElementById("saveChangesStudentBtn").addEventListener("click", saveChangesStudent);
 
     document.getElementById("loadLessonsPaymentBtn").addEventListener("click", async () => {
@@ -489,12 +494,12 @@
                 const confirmBtn = document.createElement("button");
                 confirmBtn.textContent = "Confirm";
                 confirmBtn.className = "primary-btn";
-                confirmBtn.onclick = () => confirmLesson(lesson.id);
+                confirmBtn.onclick = () => confirmLesson(lesson.lessonId);
 
                 const cancelBtn = document.createElement("button");
                 cancelBtn.textContent = "Cancel";
                 cancelBtn.className = "danger-btn";
-                cancelBtn.onclick = () => cancelLesson(lesson.id);
+                cancelBtn.onclick = () => cancelLesson(lesson.lessonId);
 
                 actions.appendChild(confirmBtn);
                 actions.appendChild(cancelBtn);
@@ -524,6 +529,21 @@
         console.error(error);
         list.innerHTML = "<li>Error loading lessons</li>";
       }
+    }
+
+    async function getTelegramLinkStudent() {
+        try {
+            const response = await fetch(API_BASE + "/telegram_link");
+            const data = await response.json();
+            if (data.link) {
+                window.open(data.link, "_blank");
+            } else {
+                alert("Telegram link not found");
+            }
+        } catch (error) {
+            console.error("Error fetching Telegram link:", error);
+             alert("Failed to fetch Telegram link.");
+        }
     }
 
     async function confirmLesson(id) {

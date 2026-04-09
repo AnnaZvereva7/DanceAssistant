@@ -25,7 +25,7 @@ public class FreeSlotService {
         repository.deleteById(slotId);
     }
 
-    public boolean checkIfSlotFree(LocalDateTime start, LocalDateTime end, int trainerId) {
+    public boolean checkIfSlotFree(LocalDateTime start, LocalDateTime end, Long trainerId) {
         Optional<FreeSlot> slotOpt = repository.findByStartTimeBeforeAndEndTimeAfterAndTrainerId(start.plusMinutes(1), end.minusMinutes(1), trainerId);
         if(slotOpt.isPresent()) {log.info("Slot found: " + slotOpt.get().getStartTime().format(Constant.formatterDayTime));
         }else {
@@ -38,7 +38,7 @@ public class FreeSlotService {
         }
     }
 
-    public void addFreeTimeSlot(LocalDateTime start, LocalDateTime end, int trainerId) {
+    public void addFreeTimeSlot(LocalDateTime start, LocalDateTime end, Long trainerId) {
         Optional<FreeSlot> slotBeforeOpt=repository.findByEndTimeAndTrainerId(start, trainerId);
         Optional<FreeSlot> slotAfterOpt=repository.findByStartTimeAndTrainerId(end, trainerId);
        if(slotAfterOpt.isPresent()&&slotBeforeOpt.isPresent()) {
@@ -64,7 +64,7 @@ public class FreeSlotService {
        }
     }
 
-    public void bookPartOfFreeSlot(LocalDateTime start, LocalDateTime end, int trainerId) {
+    public void bookPartOfFreeSlot(LocalDateTime start, LocalDateTime end, Long trainerId) {
         Optional<FreeSlot> slotOpt = repository.findByStartTimeBeforeAndEndTimeAfterAndTrainerId(start.plusMinutes(1), start.minusMinutes(1), trainerId);
         if(slotOpt.isPresent()) {
             FreeSlot slot = slotOpt.get();
@@ -99,7 +99,7 @@ public class FreeSlotService {
         }
     }
 
-    public List<FreeSlot> findFreeSlotByTrainerId(int trainerId) {
+    public List<FreeSlot> findFreeSlotByTrainerId(Long trainerId) {
         return repository.findByTrainerId(trainerId);
     }
 }

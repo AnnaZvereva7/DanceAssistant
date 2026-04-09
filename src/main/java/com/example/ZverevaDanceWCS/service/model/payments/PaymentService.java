@@ -23,7 +23,7 @@ public class PaymentService {
         this.userService = userService;
     }
 
-    public Payment saveNew(User student, int trainerId, int sum, LocalDate date) throws RuntimeException {
+    public Payment saveNew(User student, Long trainerId, int sum, LocalDate date) throws RuntimeException {
         Payment newPayment = new Payment();
         newPayment.setStudent(student);
         newPayment.setTrainerId(trainerId);
@@ -44,23 +44,23 @@ public class PaymentService {
         }
     }
 
-    public List<Payment> findByStudent (int studentId) {
+    public List<Payment> findByStudent (Long studentId) {
         return paymentRepository.findByStudentId(studentId);
     }
 
-    public List<Payment> findByYearAndTrainerId(int year, int trainerId) {
+    public List<Payment> findByYearAndTrainerId(int year, Long trainerId) {
         LocalDate startDate = LocalDate.of(year, 1,1);
         LocalDate endDate= LocalDate.of(year, 12,31);
         return paymentRepository.findByDateBetweenAndTrainerId(startDate, endDate, trainerId);
     }
 
-    public List<Payment> findByMonthAndYearAndTrainerId(int month, int year, int trainerId) {
+    public List<Payment> findByMonthAndYearAndTrainerId(int month, int year, Long trainerId) {
         LocalDate startDate = LocalDate.of(year, month,1);
         LocalDate endDate= startDate.with(TemporalAdjusters.lastDayOfMonth());
         return paymentRepository.findByDateBetweenAndTrainerId(startDate, endDate, trainerId);
     }
 
-    public List<Payment> findByStudentAndPeriod(int studentId, LocalDate startDate, LocalDate endDate) {
+    public List<Payment> findByStudentAndPeriod(Long studentId, LocalDate startDate, LocalDate endDate) {
         return paymentRepository.findByStudentIdAndDateBetween(studentId, startDate, endDate);
     }
 }

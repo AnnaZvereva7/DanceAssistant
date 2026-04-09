@@ -24,7 +24,7 @@ public class InfoService {
         return infoRepository.save(info);
     }
 
-    public StudentInfo saveFromNewInfoDTO(NewInfoDTO infoDto, int trainerId) {
+    public StudentInfo saveFromNewInfoDTO(NewInfoDTO infoDto, Long trainerId) {
         StudentInfo info = new StudentInfo();
         info.setTrainerId(trainerId);
         info.setStudentId(infoDto.studentId);
@@ -42,48 +42,11 @@ public class InfoService {
         }
     }
 
-    public List<StudentInfo> findAllByStudentId(int studentId) {
-        List<StudentInfo> info = infoRepository.findByStudentId(studentId);
-        info.sort(StudentInfo.byDate());
-        return info;
-    }
 
-    public String findByStudentActual(int studentId) {
+    public String findByStudentActual(Long studentId) {
         List<StudentInfo> info = infoRepository.findByStudentIdAndStatus(studentId, InfoStatus.ACTUAL);
         info.sort(StudentInfo.byDate());
         return info.stream().map(StudentInfo::toString).collect(Collectors.joining("\n"));
     }
-
-    public String findByStudentAndTrainerActual(int studentId, int trainerId) {
-        List<StudentInfo> info = infoRepository.findByStudentIdAndTrainerIdAndStatus(studentId, trainerId, InfoStatus.ACTUAL);
-        info.sort(StudentInfo.byDate());
-        return info.stream().map(StudentInfo::toString).collect(Collectors.joining("\n"));
-    }
-
-
-    public HashMap<Integer, String> findAllByStatusAndTrainer(InfoStatus status, int trainerId) {
-        List<StudentInfo> info = infoRepository.findByStatusAndTrainerId(status, trainerId);
-        HashMap<Integer, List<StudentInfo>> infoMap = new HashMap<>();
-        for (StudentInfo i : info) {
-            List<StudentInfo> infoList = infoMap.get(i.studentId);
-            if (infoList != null) {
-                infoList.add(i);
-                infoMap.put(i.studentId, infoList);
-            } else {
-                List<StudentInfo> newList = new ArrayList<>();
-                newList.add(i);
-                infoMap.put(i.studentId, newList);
-            }
-        }
-        HashMap<Integer, String> responce = new HashMap<>();
-        for (Map.Entry<Integer, List<StudentInfo>> entry : infoMap.entrySet()) {
-            List<StudentInfo> studentInfoList = entry.getValue();
-            studentInfoList.sort(StudentInfo.byDate());
-            String infoString = studentInfoList.stream().map(StudentInfo::toString).collect(Collectors.joining("\n"));
-            responce.put(entry.getKey(), infoString);
-        }
-        return responce;
-    }
-
 
 }

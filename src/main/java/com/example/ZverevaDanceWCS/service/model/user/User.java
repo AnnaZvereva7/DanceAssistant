@@ -1,13 +1,10 @@
 package com.example.ZverevaDanceWCS.service.model.user;
 
-import com.example.ZverevaDanceWCS.service.Constant;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -19,7 +16,7 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
-    int id;
+    Long id;
 
     @Column
     String name;

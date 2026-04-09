@@ -1,34 +1,29 @@
 package com.example.ZverevaDanceWCS.config;
 
-import com.example.ZverevaDanceWCS.service.telegramBot.TelegramStudentBot;
-import com.example.ZverevaDanceWCS.service.telegramBot.TelegramTrainerBot;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramBot;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
-import java.util.List;
 
 @Component
 public class BotInitializer {
-    private final List<TelegramLongPollingBot> bots;
+    private final TelegramBot telegramBot;
 
-    public BotInitializer(List<TelegramLongPollingBot> bots) {
-        this.bots = bots;
+    public BotInitializer(TelegramBot telegramBot) {
+        this.telegramBot = telegramBot;
     }
 
     @PostConstruct
-    public void init() throws TelegramApiException {
-        TelegramBotsApi api =
-                new TelegramBotsApi(DefaultBotSession.class);
-
-        for (TelegramLongPollingBot bot : bots) {
-            api.registerBot(bot);
+    public void init() {
+        try {
+            TelegramBotsApi api =
+                    new TelegramBotsApi(DefaultBotSession.class);
+        api.registerBot(telegramBot);
+    } catch  (TelegramApiException e){
+            throw new RuntimeException("Ошибка запуска бота", e);
         }
     }
 }

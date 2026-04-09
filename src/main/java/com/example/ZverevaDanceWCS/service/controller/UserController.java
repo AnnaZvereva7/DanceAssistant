@@ -9,11 +9,13 @@ import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
 import com.example.ZverevaDanceWCS.service.model.payments.TransactionDataDao;
+import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramEnterCode.TelegramEnterCodeService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -26,6 +28,7 @@ import java.time.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -37,19 +40,21 @@ public class UserController {
     final UserService userService;
     final PaymentService paymentService;
     final ScheduleService scheduleService;
+    final TelegramEnterCodeService telegramEnterCodeService;
 
-    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService, ScheduleService scheduleService) {
+    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService, ScheduleService scheduleService, TelegramEnterCodeService telegramEnterCodeService) {
         this.lessonService = lessonService;
         this.userService = userService;
         this.paymentService = paymentService;
         this.scheduleService = scheduleService;
+        this.telegramEnterCodeService = telegramEnterCodeService;
     }
 
     @PostMapping("/confirm_lesson/{lessonId}")
     public LessonUserDTO confirmLesson(@PathVariable Long lessonId, HttpSession session) {
-        int userId = (int) session.getAttribute("USER_ID");
+        Long userId = (Long) session.getAttribute("USER_ID");
         Lesson lesson = lessonService.findById(lessonId);
-        if (lesson.getStudent().getId() != userId) {
+        if (!lesson.getStudent().getId().equals(userId)) {
             throw new RuntimeException("User is not a student of this lesson");
         }
         return new LessonUserDTO(lessonService.confirmLesson(lessonId, LessonStatus.PENDING_STUDENT_CONFIRMATION));
@@ -58,9 +63,9 @@ public class UserController {
     @PostMapping("/cancel_lesson/{lessonId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelLesson(@PathVariable Long lessonId, HttpSession session) {
-        int userId = (int) session.getAttribute("USER_ID");
+        Long userId = (Long) session.getAttribute("USER_ID");
         Lesson lesson = lessonService.findById(lessonId);
-        if (lesson.getStudent().getId() != userId) {
+        if (!lesson.getStudent().getId().equals(userId)) {
             throw new RuntimeException("User is not a student of this lesson");
         }
         if (lesson.getStatus()!=LessonStatus.PENDING_STUDENT_CONFIRMATION&&lesson.getStatus()!=LessonStatus.PENDING_TRAINER_CONFIRMATION) {
@@ -72,14 +77,14 @@ public class UserController {
     //User endpoint, update details
     @PutMapping("/change")
     public UserUpdateByUserDto updateUserDetails(@Valid @RequestBody UserUpdateByUserDto userDto, HttpSession session) {
-        int userId = (int) session.getAttribute("USER_ID");
+        Long userId = (Long) session.getAttribute("USER_ID");
         return userService.updateByUser(userDto, userId);
     }
 
     //User and Admin endpoint
     @GetMapping("/schedule")
     public List<LessonUserDTO> getLessonByStudentId(HttpSession session) {
-        int userId = (int) session.getAttribute("USER_ID");
+        Long userId = (Long) session.getAttribute("USER_ID");
         return lessonService.findByStudentAndDateAfter(userId, LocalDateTime.now())
                 .stream()
                 .filter(lesson -> lesson.getStatus() != LessonStatus.CANCELED)
@@ -91,7 +96,7 @@ public class UserController {
     //User endpoint, get details
     @GetMapping("/my_info")
     public UserUpdateByUserDto getUserDetails(HttpSession session) {
-        int userId = (int) session.getAttribute("USER_ID");
+        Long userId = (Long) session.getAttribute("USER_ID");
         List<ScheduleShortDTO> schedules = scheduleService.findByStudent(userId)
                 .stream()
                 .map(Schedule::toShortDto)
@@ -101,13 +106,13 @@ public class UserController {
 
     @GetMapping("/to_pay")
     public PaymentDTO toPay(HttpSession session) { //todo сделать список по разным преподавателям
-        int userId = (int) session.getAttribute("USER_ID");
+        Long userId = (Long) session.getAttribute("USER_ID");
         return lessonService.findBalanceByStudentId(userId);
     }
 
     @GetMapping("/month_details/{month}/{year}")
     public List<TransactionDataDao> getPaymentsLessons(@PathVariable String month, @PathVariable int year, HttpSession session) {
-        int userId = (int) session.getAttribute("USER_ID");
+        Long userId = (Long) session.getAttribute("USER_ID");
         Month monthEnum = Month.valueOf(month.toUpperCase());
 
         YearMonth yearMonth = YearMonth.of(year, monthEnum);
@@ -131,6 +136,14 @@ public class UserController {
                 ).sorted(Comparator.comparing(TransactionDataDao::getDate))
                 .toList();
         return result;
+    }
+
+    @GetMapping("/telegram_link")
+    public Map<String,String> getTelegramLink(HttpSession session) {
+        Long userId = (Long) session.getAttribute("USER_ID");
+        String response= telegramEnterCodeService.createNewLink(userId);
+        log.info(response);
+        return Map.of("link", response);
     }
 
 }

@@ -8,9 +8,9 @@ import java.util.Optional;
 
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
-    List<Schedule> findByStudentId(int studentId);
-    List<Schedule> findByTrainerId(int trainerId);
-    List<Schedule> findByStudentIdAndTrainerId(int studentId, int trainerId);
+    List<Schedule> findByStudentId(Long studentId);
+    List<Schedule> findByTrainerId(Long trainerId);
+    List<Schedule> findByStudentIdAndTrainerId(Long studentId, Long trainerId);
     Optional<Schedule> findById(int id);
     void deleteById(int id);
 }

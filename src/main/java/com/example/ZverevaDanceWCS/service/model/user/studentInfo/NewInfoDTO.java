@@ -14,7 +14,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class NewInfoDTO {
     @Positive
-    public int studentId;
+    public Long studentId;
     @NotNull
     @NotBlank
     public String info;

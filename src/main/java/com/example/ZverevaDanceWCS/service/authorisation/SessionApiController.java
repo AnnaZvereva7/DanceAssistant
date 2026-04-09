@@ -40,8 +40,8 @@ public class SessionApiController {
         if (userId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No session");
         }
-        if(userId instanceof Integer){
-            int id = (Integer) userId;
+        if(userId instanceof Long){
+            Long id = (Long) userId;
         } else {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Invalid session data");
         }

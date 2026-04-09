@@ -23,10 +23,10 @@ public class StudentInfo {
     int id;
 
     @Column(name = "student_id", nullable = false)
-    int studentId;
+    Long studentId;
 
     @Column (name="trainer_id", nullable = false)
-    int trainerId;
+    Long trainerId;
 
     @Column(name="info_date", nullable = false)
     LocalDate date;

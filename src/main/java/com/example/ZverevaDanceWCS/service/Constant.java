@@ -8,7 +8,6 @@ public class Constant {
     public static final DateTimeFormatter formatterTimeFirst=DateTimeFormatter.ofPattern("HH:mm dd.MM");
     public static final DateTimeFormatter formatterJustDate=DateTimeFormatter.ofPattern("dd.MM.yy");
 
-    public static final String adminTelegramName = "AnnaZverevaMorozova";
     public static final long adminChatId = 152942083;
 
     public static final int permanentStudentCost = 30;

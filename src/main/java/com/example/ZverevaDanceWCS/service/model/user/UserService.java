@@ -54,35 +54,7 @@ public class UserService {
         return userRepository.save(newUser);
     }
 
-    public User newUserTelegram(long chatId, String name, String chatName) {
-        User newUser = new User();
-        if (name != null) {
-            newUser.setName(name);
-        }
-        newUser.setChatName(chatName);
-        newUser.setChatId(chatId);
-        newUser.setRole(UserRole.BY_REQUEST);
-        newUser.setMessenger(Messenger.TELEGRAM);
-        newUser.setBalance(0);
-        newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
-        return userRepository.save(newUser);
-    }
-
-    public User newUserFromJson(UserNewDTO userNewDTO) {
-        User newUser = new User();
-        newUser.setName(userNewDTO.getName());
-        newUser.setChatName(userNewDTO.getName());
-        newUser.setEmail(userNewDTO.getEmail());
-        newUser.setRole(UserRole.BY_REQUEST);
-        newUser.setMessenger(Messenger.NONE);
-        newUser.setBalance(0);
-        newUser.setLanguage(Language.ENG);
-        newUser.setBirthday(LocalDate.parse(userNewDTO.getBirthday().formatted(Constant.formatterDayTime)));
-        newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
-        return userRepository.save(newUser);
-    }
-
-    public UserUpdateByUserDto updateByUser(UserUpdateByUserDto dto, int userId) {
+    public UserUpdateByUserDto updateByUser(UserUpdateByUserDto dto, Long userId) {
         User user = findByIdWithInfo(userId);
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
@@ -116,17 +88,8 @@ public class UserService {
         }
     }
 
-
-    public List<User> findAllByTrainerId(int trainerId) {
-        return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().sorted(User.compareById()).toList();
-    }
-
-    public User saveUser(User user) {
-        return userRepository.save(user);
-    }
-
-    public Optional<User> findByChatName(String chatName) {
-        return userRepository.findByChatName(chatName);
+    public void saveUser(User user) {
+        userRepository.save(user);
     }
 
     public User findByChatId(long chatId) {
@@ -137,7 +100,7 @@ public class UserService {
         }
     }
 
-    public User findById(int id) {
+    public User findById(Long id) {
         if (userRepository.findById(id).isPresent()) {
             return userRepository.findById(id).get();
         } else {
@@ -145,7 +108,7 @@ public class UserService {
         }
     }
 
-    public User findByIdWithInfo(int id) {
+    public User findByIdWithInfo(Long id) {
         User student = findById(id);
         log.info("Loading plans for student id=" + id+": "+student.getAdditionalInfo());
         String plans = infoService.findByStudentActual(id);
@@ -154,15 +117,7 @@ public class UserService {
         return student;
     }
 
-    public List<User> findAllByRoleAndTrainerId(UserRole role, int trainerId) {
-        if (role == null) {
-            return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().sorted(User.compareById()).toList();
-        } else {
-            return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().filter(u->u.getRole()==role).sorted(User.compareById()).toList();
-        }
-    }
-
-    public List<User> findAllByRoleInAndTrainerId(List<UserRole> roles, int trainerId) {
+    public List<User> findAllByRoleInAndTrainerId(List<UserRole> roles, Long trainerId) {
         return trainerStudentService.getAllStudentsByTrainer(trainerId).stream().filter(u->roles.contains(u.getRole())).sorted(User.compareById()).toList();
     }
 

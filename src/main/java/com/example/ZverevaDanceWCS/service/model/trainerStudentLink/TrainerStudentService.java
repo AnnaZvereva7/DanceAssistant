@@ -24,12 +24,12 @@ public class TrainerStudentService {
         }
     }
 
-    public List<User> getAllStudentsByTrainer(int trainerId) {
+    public List<User> getAllStudentsByTrainer(Long trainerId) {
         List<TrainerStudentLink> links = repository.findAllByTrainerId(trainerId);
         return links.stream().map(TrainerStudentLink::fromLinkGetStudent).toList();
     }
 
-    public List<User> getActualStudentsByTrainer(int trainerId) {
+    public List<User> getActualStudentsByTrainer(Long trainerId) {
         List<TrainerStudentLink> links = repository.findAllByTrainerId(trainerId);
         return links
                 .stream()
@@ -38,7 +38,7 @@ public class TrainerStudentService {
                 .toList();
     }
 
-    public List<User> getAllTrainersByStudent(int studentId) {
+    public List<User> getAllTrainersByStudent(Long studentId) {
         return repository.findAllByStudentId(studentId).stream().map(TrainerStudentLink::fromLinkGetTrainer).toList();
     }
 }

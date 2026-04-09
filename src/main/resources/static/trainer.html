@@ -213,6 +213,8 @@
                 <input type="text" id="calendarLink"></input>
             </label>
             <button id="refreshCalendarLinkBtn">Refresh calendar link</button>
+            <button id="getTelegramLinkBtn">Get Telegram Link</button>
+            <a id="tgLink" target="_blank"></a>
         </div>
         <div id="studentDetails" class="hidden">
             <h3>Student details</h3>
@@ -363,6 +365,7 @@
     const loadMyInfoBtn =document.getElementById("loadMyInfoBtn");
     const myDetails = document.getElementById("myDetails");
     const refreshCalendarLinkBtn = document.getElementById("refreshCalendarLinkBtn");
+    const getTelegramLinkBtn = document.getElementById("getTelegramLinkBtn");
     const loadLessonsBtn = document.getElementById("loadLessonsBtn");
     const lessonsTab = document.getElementById("lessonsTab");
     const lessonDetails = document.getElementById("lessonDetails");
@@ -446,6 +449,22 @@
     }
 
     refreshCalendarLinkBtn.addEventListener("click", refreshLink);
+    getTelegramLinkBtn.addEventListener("click", getTelegramLink);
+
+     async function getTelegramLink() {
+        try {
+            const response = await fetch(API_BASE + "/telegram_link");
+            const data = await response.json();
+            if (data.link) {
+                window.open(data.link, "_blank");
+            } else {
+                alert("Telegram link not found");
+            }
+        } catch (error) {
+            console.error("Error fetching Telegram link:", error);
+             alert("Failed to fetch Telegram link.");
+        }
+    }
 
     async function refreshLink() {
         try {

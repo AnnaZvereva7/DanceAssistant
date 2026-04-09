@@ -3,6 +3,7 @@ package com.example.ZverevaDanceWCS.service.telegramBot;
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.user.*;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramEnterCode.TelegramEnterCodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,13 +14,10 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Slf4j
 @Component
 @PropertySource("application.properties")
-public class TelegramStudentBot extends TelegramLongPollingBot {
+public class TelegramBot extends TelegramLongPollingBot {
 
     @Value("${bot.name}")
     String botName;
@@ -27,17 +25,16 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
     @Value("${bot.token}")
     String token;
 
-    @Value("${bot.start.code}")
-    String startCode;
-
     final UserService userService;
-    final TelegramStudentService telegramStudentService;
+    final TelegramService telegramService;
+    final TelegramEnterCodeService telegramEnterCodeService;
 
     @Autowired
-    public TelegramStudentBot(UserService userService,
-                              TelegramStudentService telegramtelegramStudentService) {
+    public TelegramBot(UserService userService,
+                       TelegramService telegramtelegramService, TelegramEnterCodeService telegramEnterCodeService) {
         this.userService = userService;
-        this.telegramStudentService = telegramtelegramStudentService;
+        this.telegramService = telegramtelegramService;
+        this.telegramEnterCodeService = telegramEnterCodeService;
     }
 
     @Override
@@ -53,13 +50,7 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
                 User student = userService.findByChatId(chatId);
                 String command = getCommand(messageText);
                 String[] addInfo = additionalCommandInformation(messageText, command, " ");
-                if (student.getRole() == UserRole.BY_REQUEST
-                        || student.getRole() == UserRole.PERMANENT
-                        || student.getRole() == UserRole.OLD) {
                     onUpdateReceivedStudent(command, addInfo, chatId, name);
-                } else {
-                    send(chatId, "With role " + student.getRole() + " you need write to other chat, text administrator"); //todo message for wrong role
-                }
             } catch (NotFoundException e){
                 log.info("New user with chatId: " + chatId + " name: " + name + " userName: " + userName +"text: " + messageText);
                 onUpdateReceivedNewUser(messageText, chatId, name, userName);
@@ -67,14 +58,21 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
         }
     }
 
+    //todo сделать для каждого пользователя отдельный код, сохранить в отдельной таблице в базе, чтоб действовал 1 день
     private void onUpdateReceivedNewUser(String text, Long chatId, String name, String chatName) {
         if (text.startsWith("/start")) {
             String[] parts = text.split(" ");
-            if (parts[1].equals(startCode)) {
-                User student = userService.newUserTelegram(chatId, name, chatName);
+            String enterCode=parts[1];
+
+            if (telegramEnterCodeService.isLinkValid(enterCode)) {
+                Long userId = telegramEnterCodeService.findUserIdByTelegramEnterCode(enterCode);
+                User student = userService.findById(userId);
                 send(Constant.adminChatId, "New user started bot: " + name + " - " + chatName); //todo убрать это информирование в будущем
-                log.info("New user started bot: " + name + " - " + chatName + " id=" + student.getId());
-                send(chatId, telegramStudentService.startCommandRecieveUser(name));
+                student.setMessenger(Messenger.TELEGRAM);
+                student.setChatId(chatId);
+                student.setChatName(chatName);
+                userService.saveUser(student);
+                send(chatId, telegramService.startCommandRecieveUser(name));
             }
         }
     }
@@ -82,26 +80,16 @@ public class TelegramStudentBot extends TelegramLongPollingBot {
     private void onUpdateReceivedStudent(String command, String[] addInfo, long chatId, String name) {
         switch (command) {
             case "/start":
-                send(chatId, telegramStudentService.startCommandRecieveUser(name));
+                send(chatId, telegramService.startCommandRecieveUser(name));
                 break;
             case "/schedule":
-                send(chatId, telegramStudentService.scheduleForStudent(chatId));
+                send(chatId, telegramService.schedule(chatId));
                 break;
             case "/menu":
-                send(chatId, telegramStudentService.printMenuUser());
+                send(chatId, telegramService.printMenuUser());
                 break;
-            case "show_info":
-                send(chatId, telegramStudentService.showInfo(chatId));
-            case "/cancel_lesson": //cancel_lesson:[01.01.25]
-                try {
-                    HashMap<Long, String> responses = telegramStudentService.cancelLessonByStudent(addInfo, chatId);
-                    for (Map.Entry<Long, String> entry : responses.entrySet()) {
-                        send(entry.getKey(), entry.getValue());
-                    }
-                } catch (RuntimeException e) {
-                    send(chatId, e.getMessage());
-                }
-                break;
+            case "/show_info":
+                send(chatId, telegramService.showInfo(chatId));
             default:
                 send(chatId, Constant.CNR);
         }

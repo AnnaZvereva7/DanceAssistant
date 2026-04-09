@@ -9,8 +9,8 @@ import java.util.Optional;
 @Repository
 public interface InfoRepository extends JpaRepository<StudentInfo, Long> {
     Optional<StudentInfo> findById(int infoId);
-    List<StudentInfo> findByStudentId (int studentId);
-    List<StudentInfo> findByStudentIdAndStatus (int studentId, InfoStatus status);
-    List<StudentInfo> findByStudentIdAndTrainerIdAndStatus(int studentId, int trainerId, InfoStatus status);
-    List<StudentInfo> findByStatusAndTrainerId(InfoStatus status, int trainerId);
+    List<StudentInfo> findByStudentId (Long studentId);
+    List<StudentInfo> findByStudentIdAndStatus (Long studentId, InfoStatus status);
+    List<StudentInfo> findByStudentIdAndTrainerIdAndStatus(Long studentId, Long trainerId, InfoStatus status);
+    List<StudentInfo> findByStatusAndTrainerId(InfoStatus status, long trainerId);
 }

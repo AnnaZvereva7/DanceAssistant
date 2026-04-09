@@ -92,5 +92,13 @@
         track_id SERIAL REFERENCES spotify_tracks(track_id) ON DELETE CASCADE,
         tag_id INT REFERENCES tags(tag_id) ON DELETE CASCADE,
         PRIMARY KEY (track_id, tag_id)
+    );
+
+    create table if not exists telegram_code (
+        code_id SERIAL PRIMARY KEY,
+        code VARCHAR(255) NOT NULL UNIQUE,
+        user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
+        created_at TIMESTAMPTZ NOT NULL,
+        expired_at TIMESTAMPTZ NOT NULL
     )
 

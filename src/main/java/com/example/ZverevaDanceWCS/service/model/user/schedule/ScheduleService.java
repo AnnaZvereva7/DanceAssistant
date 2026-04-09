@@ -28,25 +28,25 @@ public class ScheduleService {
         repository.delete(schedule);
     }
 
-    public List<Schedule> findByStudent(int studentId) {
+    public List<Schedule> findByStudent(Long studentId) {
        return repository.findByStudentId(studentId);
 
     }
 
-    public Schedule findById(int id) {
+    public Schedule findById(Long id) {
         Optional<Schedule> schedule = repository.findById(id);
         return schedule.orElse(null);
     }
 
-    public List<Schedule> findAllByStudentIdAndTrainerId (int studentId, int trainerId) {
+    public List<Schedule> findAllByStudentIdAndTrainerId (Long studentId, Long trainerId) {
         return repository.findByStudentIdAndTrainerId(studentId, trainerId);
     }
 
-    public List<Schedule> findByTrainerId(int trainerId) {
+    public List<Schedule> findByTrainerId(Long trainerId) {
         return repository.findByTrainerId(trainerId);
     }
 
-    public Schedule saveNew(int trainerId, int studentId, String dateTime) {
+    public Schedule saveNew(Long trainerId, Long studentId, String dateTime) {
         Schedule newSchedule = new Schedule();
         newSchedule.setTrainerId(trainerId);
         newSchedule.setStudentId(studentId);

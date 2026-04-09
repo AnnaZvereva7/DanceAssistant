@@ -9,11 +9,9 @@ import java.util.Optional;
 
 @Repository
 public interface FreeSlotRepository extends JpaRepository<FreeSlot, Long> {
-    List<FreeSlot> findByTrainerId(int trainerId);
-    Optional<FreeSlot> findByStartTimeBeforeAndEndTimeAfterAndTrainerId(LocalDateTime startTime, LocalDateTime endTime, int trainerId);
-    Optional<FreeSlot> findByStartTimeAndTrainerId(LocalDateTime startTime, int trainerId);
-    Optional<FreeSlot> findByEndTimeAndTrainerId(LocalDateTime endTime, int trainerId);
-    Optional<FreeSlot> findByStartTimeBeforeAndTrainerId(LocalDateTime startTime, int trainerId);
-    Optional<FreeSlot> findByStartTimeBetweenAndEndTimeBetweenAndTrainerId(LocalDateTime strat1, LocalDateTime end1,
-                                                                           LocalDateTime start2, LocalDateTime end2, int trainerId);
+    List<FreeSlot> findByTrainerId(Long trainerId);
+    Optional<FreeSlot> findByStartTimeBeforeAndEndTimeAfterAndTrainerId(LocalDateTime startTime, LocalDateTime endTime, Long trainerId);
+    Optional<FreeSlot> findByStartTimeAndTrainerId(LocalDateTime startTime, Long trainerId);
+    Optional<FreeSlot> findByEndTimeAndTrainerId(LocalDateTime endTime, Long trainerId);
+
 }

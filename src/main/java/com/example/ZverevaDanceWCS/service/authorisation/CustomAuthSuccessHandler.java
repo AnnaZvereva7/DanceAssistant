@@ -65,7 +65,7 @@ public class CustomAuthSuccessHandler implements AuthenticationSuccessHandler {
 
         if (calendarToken != null && !calendarToken.isBlank()) {
             try {
-                int trainerId = calendarLinkService.findTrainerIdByToken(calendarToken);
+                Long trainerId = calendarLinkService.findTrainerIdByToken(calendarToken);
                 User trainer = userService.findById(trainerId);
                 trainerStudentService.saveLink(trainer, user);
             } catch (RuntimeException ex) {

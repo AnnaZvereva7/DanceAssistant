@@ -6,7 +6,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class UserShortDAO {
-    int id;
+    Long id;
     String name;
     String chatName;
     UserRole role;

@@ -45,7 +45,7 @@ public class LessonService {
 
     }
 
-    public List<Lesson> findByStatusAndTrainerId(LessonStatus status, int trainerId) {
+    public List<Lesson> findByStatusAndTrainerId(LessonStatus status, Long trainerId) {
         return lessonsRepository.findByStatusAndTrainerId(status, trainerId)
                 .stream()
                 .sorted(Comparator.comparing(Lesson::getStartTime))
@@ -61,7 +61,7 @@ public class LessonService {
     }
 
     //todo баланс должен быть тоже разделен по преподавателям, а не общий по ученику
-    public String paymentToLessons(int studentId, int sum, int trainerId) {
+    public String paymentToLessons(Long studentId, int sum, Long trainerId) {
         List<Lesson> lessons = lessonsRepository.findByStatusAndStudentIdAndTrainerId(LessonStatus.COMPLETED, studentId, trainerId)
                 .stream()
                 .sorted(Comparator.comparing(Lesson::getStartTime))
@@ -87,15 +87,15 @@ public class LessonService {
         return answer;
     }
 
-    public List<Lesson> findByStatusAndStudentId(LessonStatus status, int id) {
+    public List<Lesson> findByStatusAndStudentId(LessonStatus status, Long id) {
         return lessonsRepository.findByStatusAndStudentId(status, id);
     }
 
-    public List<Lesson> findByStatusInAndStudentId(List<LessonStatus> statuses, int id) {
+    public List<Lesson> findByStatusInAndStudentId(List<LessonStatus> statuses, Long id) {
         return lessonsRepository.findByStatusInAndStudentId(statuses, id);
     }
 
-    public List<Lesson> findByStatusAndStudentIdAndTrainerId(LessonStatus status, int studentId, int trainerId) {
+    public List<Lesson> findByStatusAndStudentIdAndTrainerId(LessonStatus status, Long studentId, Long trainerId) {
         return lessonsRepository.findByStatusAndStudentIdAndTrainerId(status, studentId, trainerId);
     }
 
@@ -143,7 +143,7 @@ public class LessonService {
         return lessonsRepository.findByStartTimeBetween(startDate, endDate);
     }
 
-    public List<Lesson> findInPeriodNotCanceled(LocalDate startDate, LocalDate endDate, int trainerId) {
+    public List<Lesson> findInPeriodNotCanceled(LocalDate startDate, LocalDate endDate, Long trainerId) {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atStartOfDay().plusDays(1);
         return lessonsRepository.findByStartTimeBetweenAndTrainerIdAndStatusNot(startDateTime, endDateTime, trainerId, LessonStatus.CANCELED)
@@ -152,21 +152,8 @@ public class LessonService {
                 .collect(Collectors.toList());
     }
 
-    public List<Lesson> findByStudentAndPeriod(int studentId, LocalDate startDate, LocalDate endDate) {
+    public List<Lesson> findByStudentAndPeriod(Long studentId, LocalDate startDate, LocalDate endDate) {
         return lessonsRepository.findByStudentIdAndStartTimeBetween(studentId, startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
-    }
-
-    public Lesson findByStudentDate(LocalDate date, int studentId) {
-        LocalDateTime startDate = date.atStartOfDay();
-        LocalDateTime endDate = startDate.plusDays(1);
-        List<Lesson> lessons = lessonsRepository.findByStudentIdAndStartTimeBetween(studentId, startDate, endDate);
-        if (lessons.isEmpty()) {
-            throw new NotFoundException("No lessons on this date");
-        } else if (lessons.size() == 1) {
-            return lessons.get(0);
-        } else {
-            throw new ExceptionForAdmin("More then one lesson on one date");
-        }
     }
 
     public String lessonsToBill(List<Lesson> lessons) {
@@ -200,33 +187,22 @@ public class LessonService {
         return lesson;
     }
 
-    public boolean existByStudentDate(LocalDate date, int studentId) {
-        LocalDateTime startDate = date.atStartOfDay();
-        LocalDateTime endDate = startDate.plusDays(1);
-        return lessonsRepository.existsByStudentIdAndStartTimeBetween(studentId, startDate, endDate);
-    }
-
     public List<Lesson> findPassedNotCompletedLessons() {
         return lessonsRepository.findByStatusInAndStartTimeBefore(List.of(LessonStatus.PENDING_STUDENT_CONFIRMATION, LessonStatus.PLANNED), LocalDateTime.now());
     }
 
-    public List<Lesson> findByStudentAndDateAfter(int studentId, LocalDateTime dateTime) {
+    public List<Lesson> findByStudentAndDateAfter(Long studentId, LocalDateTime dateTime) {
         return lessonsRepository.findByStudentIdAndStartTimeAfter(studentId, dateTime);
     }
 
-    public List<Lesson> findByStudentIdAndStatus(int studentId, LessonStatus status) {
-        return lessonsRepository.findByStudentIdAndStatus(studentId, status);
-    }
-
-
-    public List<Lesson> findByStatusInAndTrainerId(List<LessonStatus> statuses, int trainerId) {
+    public List<Lesson> findByStatusInAndTrainerId(List<LessonStatus> statuses, Long trainerId) {
         return lessonsRepository.findByStatusInAndTrainerId(statuses, trainerId)
                 .stream()
                 .sorted(Comparator.comparing(Lesson::getStartTime))
                 .collect(Collectors.toList());
     }
 
-    public List<PaymentDTO> findAllBalanceByTrainer(int trainerId) {
+    public List<PaymentDTO> findAllBalanceByTrainer(Long trainerId) {
         List<PaymentDTO> payments = new ArrayList<>();
         List<User> users = userService.findAllByRoleInAndTrainerId(List
                 .of(UserRole.BY_REQUEST, UserRole.PERMANENT, UserRole.GROUP), trainerId);
@@ -240,7 +216,7 @@ public class LessonService {
         return payments;
     }
 
-    public PaymentDTO findBalanceByStudentId(int id) {
+    public PaymentDTO findBalanceByStudentId(Long id) {
         User student = userService.findById(id);
         List<Lesson> lessons = findByStatusAndStudentId(LessonStatus.COMPLETED, student.getId())
                 .stream()
@@ -249,7 +225,7 @@ public class LessonService {
         return new PaymentDTO().toPaymentDTO(student, lessons);
     }
 
-    public PaymentDTO findBalanceByStudentIdAndTrainerId(int studentId, int trainerId) {
+    public PaymentDTO findBalanceByStudentIdAndTrainerId(Long studentId, Long trainerId) {
         User student = userService.findById(studentId);
         List<Lesson> lessons = findByStatusAndStudentIdAndTrainerId(LessonStatus.COMPLETED, student.getId(), trainerId)
                 .stream()

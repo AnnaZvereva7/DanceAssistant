@@ -20,7 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserFullDTO {
-    private int id;
+    private Long id;
     private String name;
     private String email;
     private UserRole role;

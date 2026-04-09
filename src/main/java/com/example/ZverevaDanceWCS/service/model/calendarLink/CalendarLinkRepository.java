@@ -8,6 +8,6 @@ import java.util.Optional;
 @Repository
 public interface CalendarLinkRepository extends JpaRepository<CalendarLink, Long> {
 
-    Optional<CalendarLink> findByTrainerIdAndExpires(int trainerId, Boolean expires);
+    Optional<CalendarLink> findByTrainerIdAndExpires(Long trainerId, Boolean expires);
     Optional<CalendarLink> findTrainerIdByToken(String token);
 }

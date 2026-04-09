@@ -21,7 +21,7 @@ public class FreeSlot {
     Long id;
 
     @Column(name = "trainer_id", nullable = false)
-    int trainerId;
+    Long trainerId;
 
 
     @Column(name = "start_date_time", nullable = false)

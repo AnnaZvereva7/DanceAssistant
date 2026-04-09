@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 public class LessonNewDTO {
     @NotNull
     @Positive
-    int studentId;
+    Long studentId;
 
     @JsonFormat(pattern = "dd.MM.yyyy HH:mm")
     @Future

@@ -23,25 +23,25 @@ public class CalendarEventService {
         this.slotService = slotService;
     }
 
-    public void addFreeSlot(TimeRequest timeRequest, int trainerId) {
+    public void addFreeSlot(TimeRequest timeRequest, Long trainerId) {
         slotService.addFreeTimeSlot(timeRequest.start, timeRequest.end, trainerId);
     }
 
-    public List<CalendarEventDto> getTrainerCalendar(int trainerId) {
+    public List<CalendarEventDto> getTrainerCalendar(Long trainerId) {
         return Stream
                 .concat(getTrainerFreeSlots(trainerId).stream(),
                         getTrainerLessons(trainerId).stream())
                 .collect(Collectors.toList());
     }
 
-    public List<CalendarEventDto> getTrainerFreeSlots(int trainerId) {
+    public List<CalendarEventDto> getTrainerFreeSlots(Long trainerId) {
         return slotService.findFreeSlotByTrainerId(trainerId)
                 .stream()
                 .map(CalendarEventDto::new)
                 .toList();
     }
 
-    public List<CalendarEventDto> getTrainerLessons(int trainerId) {
+    public List<CalendarEventDto> getTrainerLessons(Long trainerId) {
         return lessonService.findByStatusInAndTrainerId(List.of(LessonStatus.PLANNED, LessonStatus.PAID,
                 LessonStatus.COMPLETED, LessonStatus.PENDING_STUDENT_CONFIRMATION, LessonStatus.PENDING_TRAINER_CONFIRMATION), trainerId)
                 .stream()
@@ -49,7 +49,7 @@ public class CalendarEventService {
                 .toList();
     }
 
-    public List<CalendarEventDto> getStudentLessons(int studentId) {
+    public List<CalendarEventDto> getStudentLessons(Long studentId) {
         return lessonService.findByStatusInAndStudentId(List.of(LessonStatus.PLANNED, LessonStatus.PAID,
                 LessonStatus.COMPLETED, LessonStatus.PENDING_STUDENT_CONFIRMATION, LessonStatus.PENDING_TRAINER_CONFIRMATION), studentId)
                 .stream()

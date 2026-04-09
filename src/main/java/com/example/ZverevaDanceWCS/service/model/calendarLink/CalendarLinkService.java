@@ -13,12 +13,12 @@ public class CalendarLinkService {
         this.calendarLinkRepository = calendarLinkRepository;
     }
 
-    public CalendarLink findOrCreateLink(int trainerId) {
+    public CalendarLink findOrCreateLink(Long trainerId) {
         Optional<CalendarLink> linkOpt = calendarLinkRepository.findByTrainerIdAndExpires(trainerId, false);
         return linkOpt.orElseGet(() -> calendarLinkRepository.save(new CalendarLink(trainerId)));
     }
 
-    public CalendarLink refreshLink(int trainerId) {
+    public CalendarLink refreshLink(Long trainerId) {
         Optional<CalendarLink> linkOpt = calendarLinkRepository.findByTrainerIdAndExpires(trainerId, false);
         if(linkOpt.isPresent()) {
             CalendarLink link = linkOpt.get();
@@ -28,7 +28,7 @@ public class CalendarLinkService {
         return calendarLinkRepository.save(new CalendarLink(trainerId));
     }
 
-    public int findTrainerIdByToken(String token) {
+    public Long findTrainerIdByToken(String token) {
         Optional<CalendarLink> linkOpt = calendarLinkRepository.findTrainerIdByToken(token);
         if (linkOpt.isPresent()) {
            return linkOpt.get().getTrainerId();

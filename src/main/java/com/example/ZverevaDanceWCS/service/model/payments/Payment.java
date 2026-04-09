@@ -27,7 +27,7 @@ public class Payment {
     User student;
 
     @Column (name = "trainer_id", nullable = false)
-    int trainerId;
+    Long trainerId;
 
     @Column(name = "date_of_payment", nullable = false)
     LocalDate date;

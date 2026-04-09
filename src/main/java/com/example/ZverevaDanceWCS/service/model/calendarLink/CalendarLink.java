@@ -23,7 +23,7 @@ public class CalendarLink {
     Long linkId;
 
     @Column(name = "trainer_id", nullable = false)
-    int trainerId;
+    Long trainerId;
 
     @Column(name = "token", nullable = false, unique = true)
     String token;
@@ -37,7 +37,7 @@ public class CalendarLink {
     @Transient
     String link;
 
-    public CalendarLink(int trainerId) {
+    public CalendarLink(Long trainerId) {
         this.trainerId = trainerId;
         SecureRandom RNG = new SecureRandom();
         byte[] bytes = new byte[24];

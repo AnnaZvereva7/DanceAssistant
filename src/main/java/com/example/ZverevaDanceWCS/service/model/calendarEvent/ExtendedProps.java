@@ -11,7 +11,7 @@ import lombok.Setter;
 public class ExtendedProps {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     CalendarEventStatus status;
-    Integer trainerId;
+    Long trainerId;
 
     public ExtendedProps (CalendarEventStatus status) {
         this.status=status;

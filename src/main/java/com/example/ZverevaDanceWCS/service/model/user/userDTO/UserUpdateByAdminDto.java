@@ -17,7 +17,7 @@ import java.util.List;
 public class UserUpdateByAdminDto {
     @NotNull
     @Positive
-    int studentId;
+    Long studentId;
     @NotNull
     @NotBlank
     String name;

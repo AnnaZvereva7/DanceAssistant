@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface TrainerStudentRepository extends JpaRepository<TrainerStudentLink, Long> {
-    List<TrainerStudentLink> findAllByTrainerId(int trainerId);
-    List<TrainerStudentLink> findAllByStudentId(int studentId);
-    Optional<TrainerStudentLink> findByTrainerIdAndStudentId(int trainerId, int studentId);
+    List<TrainerStudentLink> findAllByTrainerId(Long trainerId);
+    List<TrainerStudentLink> findAllByStudentId(Long studentId);
+    Optional<TrainerStudentLink> findByTrainerIdAndStudentId(Long trainerId, Long studentId);
 }

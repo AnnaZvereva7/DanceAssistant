@@ -12,7 +12,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class PaymentDTO {
-    int studentId;
+    Long studentId;
     String studentName;
     List<String> completedLessons; //дата-время (преподаватель) - к оплате
     int balance;

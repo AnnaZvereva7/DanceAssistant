@@ -20,31 +20,15 @@ import java.util.stream.Collectors;
 @Component
 public class TelegramScheduledBot {
 
-    final TelegramTrainerBot trainerBot;
-    final TelegramStudentBot studentBot;
+    final TelegramBot telegramBot;
 
     final UserService userService;
     final LessonService lessonService;
 
-    public TelegramScheduledBot(TelegramTrainerBot trainerBot, TelegramStudentBot studentBot, UserService userService, LessonService lessonService) {
-        this.trainerBot = trainerBot;
-        this.studentBot = studentBot;
+    public TelegramScheduledBot(TelegramBot telegramBot, UserService userService, LessonService lessonService) {
+        this.telegramBot = telegramBot;
         this.userService = userService;
         this.lessonService = lessonService;
-    }
-
-    @Scheduled(cron = "0 0 18 * * *")
-    public void reminder() {
-        LocalDate tomorrow = LocalDate.now().plusDays(1);
-        List<Lesson> lessons = lessonService.findByDate(tomorrow);
-        lessons=lessons.stream().filter(lesson -> lesson.getStatus()!=LessonStatus.CANCELED).collect(Collectors.toList());
-        for (Lesson lesson : lessons) {
-            User student = lesson.getStudent();
-            if (student.getMessenger() == Messenger.TELEGRAM) {
-                studentBot.send(student.getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.formatterDayTime));
-                log.info("Отправлено уведомление о занятии " + student.getName());
-            }
-        }
     }
 
     @Scheduled(cron = "0 0 18 * * *")
@@ -56,14 +40,17 @@ public class TelegramScheduledBot {
                 .sorted(Comparator.comparing(Lesson::getStartTime))
                 .collect(Collectors.toList());
         if (!lessons.isEmpty()) {
-            String answer = "Tomorrow lessons:\n";
-            for (Lesson lesson : lessons) {
-                answer = answer + lesson.getStartTime().format(Constant.formatterTimeFirst) + " - " + lesson.getStudent().getName() + " (lessonId=" + lesson.getId() + ")\n";
+            for(Lesson lesson: lessons) {
+                if (lesson.getTrainer().getMessenger()==Messenger.TELEGRAM) {
+                    telegramBot.send(lesson.getTrainer().getChatId(), "Tomorrow lesson" + lesson.getStartTime().format(Constant.formatterDayTime) + " with " + lesson.getStudent().getName());
+                }
+                if (lesson.getStudent().getMessenger() == Messenger.TELEGRAM) {
+                    telegramBot.send(lesson.getStudent().getChatId(), "Tomorrow lesson at " + lesson.getStartTime().format(Constant.formatterDayTime));
+                }
             }
-            trainerBot.send(Constant.adminChatId, answer); //todo вместо админа - тренер, к занятию должен быть привязан ученик и тренер
-            log.info("уведомление администратору о расписании на следующий день");
+
         } else {
-            log.info("без уведомления администратору, занятий на следующий день нет");
+            log.info("no lessons tomorrow");
         }
     }
 
@@ -71,14 +58,13 @@ public class TelegramScheduledBot {
     public void passedLessons() { //09.05.25 Anton NEW (lessonId=12)
         List<Lesson> lessons = lessonService.findPassedNotCompletedLessons();
         if(!lessons.isEmpty()) {
-            String answer = "Не завершенные занятия:\n";
-            for (Lesson lesson : lessons) {
-                answer = answer + lesson.getStartTime().format(Constant.formatterJustDate) + " " + lesson.getStudent().getName() + " " + lesson.getStatus() + " (lessonId=" + lesson.getId() + ")\n";
+            for(Lesson lesson : lessons) {
+                if (lesson.getTrainer().getMessenger() == Messenger.TELEGRAM) {
+                    telegramBot.send(lesson.getTrainer().getChatId(), "Lesson " + lesson.getStartTime().format(Constant.formatterJustDate) + " with " + lesson.getStudent().getName() + " is not completed");
+                }
             }
-            trainerBot.send(Constant.adminChatId, answer); //todo вместо админа - тренер, к занятию должен быть привязан ученик и тренер
-            log.info("Отправлено уведомление о прошедших занятиях");
         } else {
-            log.info("Нет незавершенных прошедших занятий");
+            log.info("All lessons completed");
         }
 
     }

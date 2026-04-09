@@ -30,10 +30,10 @@ public class Schedule {
     LocalTime scheduleTime;
 
     @Column(name = "student_id", nullable = false)
-    int studentId;
+    Long studentId;
 
     @Column(name = "trainer_id", nullable = false)
-    int trainerId;
+    Long trainerId;
 
     public String toStringSchedule () {
         return scheduleDay.toString()+" " + scheduleTime.format(Constant.formatterTime);
