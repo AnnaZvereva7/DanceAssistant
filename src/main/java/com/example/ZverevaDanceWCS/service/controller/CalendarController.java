@@ -22,6 +22,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -118,9 +120,13 @@ public class CalendarController {
     public void deleteLesson(@PathVariable(name = "lessonId") String eventId) {
         Long lessonId=calendarEventService.extractEventId(eventId, "lesson");
         Lesson lesson = lessonService.findById(lessonId);
-        lessonService.cancelLesson(lesson);
-        if(lesson.getTrainer().getMessenger()== Messenger.TELEGRAM) {
-            telegramBot.send(lesson.getTrainer().getChatId(), "Lesson cancelled: " + lesson.getStartTime().format(Constant.formatterDayTime) + " with student " + lesson.getStudent().getName());
+        if(lesson.getStartTime().isAfter(LocalDateTime.now().plusHours(24))) {
+            lessonService.cancelLesson(lesson);
+            if (lesson.getTrainer().getMessenger() == Messenger.TELEGRAM) {
+                telegramBot.send(lesson.getTrainer().getChatId(), "Lesson cancelled: " + lesson.getStartTime().format(Constant.formatterDayTime) + " with student " + lesson.getStudent().getName());
+            }
+        } else {
+            throw new RuntimeException("You cannot cancel a lesson less than 24 hours before the start time");
         }
     }
 

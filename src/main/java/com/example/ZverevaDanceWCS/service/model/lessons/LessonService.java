@@ -11,6 +11,7 @@ import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStude
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserRole;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -19,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,8 @@ public class LessonService {
     private final UserService userService;
     private final TrainerStudentService trainerStudentService;
     private final FreeSlotService slotService;
+//    @Value("${uid.domen}")
+//    private String uidDomen;
 
 
     public LessonService(LessonsRepository lessonsRepository, GoogleCalendarService calendarService, UserService userService,
@@ -106,6 +110,7 @@ public class LessonService {
         trainerStudentService.saveLink(newLesson.getTrainer(), newLesson.getStudent());
         lesson.setTitle(newLesson.getTitle() + " (id=" + lesson.getId() + ")");
         slotService.bookPartOfFreeSlot(lesson.getStartTime(), lesson.getEndTime(), lesson.getTrainer().getId());
+//        String eventId = UUID.randomUUID() + "@" + uidDomen;
         String eventId = calendarService.addEvent(lesson.getTitle(), "", lesson.getStartTime(), lesson.getEndTime());
         lesson.setGoogleEventId(eventId);
         return lessonsRepository.save(lesson);
