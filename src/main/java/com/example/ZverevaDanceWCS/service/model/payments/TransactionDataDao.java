@@ -13,22 +13,28 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TransactionDataDao {
+    Long id;
     LocalDate date;
     TransactionType type;
+    String status;
     int amount;
 
     public static TransactionDataDao fromLesson(Lesson lesson) {
         TransactionDataDao dao = new TransactionDataDao();
+        dao.id= lesson.getId();
         dao.date = lesson.getStartTime().toLocalDate();
         dao.type = TransactionType.LESSON;
+        dao.status=lesson.getStatus().toString();
         dao.amount = -lesson.getCost();
         return dao;
     }
 
     public static TransactionDataDao fromPayment(Payment payment) {
         TransactionDataDao dao = new TransactionDataDao();
+        dao.id=payment.getId();
         dao.date = payment.getDate();
         dao.type = TransactionType.PAYMENT;
+        dao.status = " - ";
         dao.amount = payment.getSum();
         return dao;
     }

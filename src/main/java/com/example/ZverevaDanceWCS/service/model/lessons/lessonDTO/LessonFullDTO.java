@@ -13,6 +13,7 @@ public class LessonFullDTO {
     private Long id;
     private Long studentId;
     private String studentName;
+    private String trainerName;
     private String startTime;
     private LessonStatus status;
     private int cost;
@@ -24,6 +25,7 @@ public class LessonFullDTO {
         LessonFullDTO dto = new LessonFullDTO();
         dto.id = lesson.getId();
         dto.studentName = lesson.getStudent().getName();
+        dto.trainerName=lesson.getTrainer().getName();
         dto.studentId=lesson.getStudent().getId();
         dto.startTime = lesson.getStartTime().format(com.example.ZverevaDanceWCS.service.Constant.formatterDayTime);
         dto.status = lesson.getStatus();

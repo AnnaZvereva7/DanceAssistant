@@ -27,9 +27,9 @@ public class UserFullDTO {
     private String plans;
     private String birthday;
     private Messenger messenger;
-    private int balance;
-    private Language language;
-    private List<ScheduleShortDTO> scheduleDtos;
+    private int balance; //todo delete
+    private Language language; //todo delete
+    private List<ScheduleShortDTO> scheduleDtos; //todo delete
 
     public static UserFullDTO toFullDTO (User user, List<Schedule> schedules) {
         List<ScheduleShortDTO> scheduleDTOs=new ArrayList<>();

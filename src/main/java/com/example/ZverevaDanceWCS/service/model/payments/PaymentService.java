@@ -36,7 +36,7 @@ public class PaymentService {
         return paymentRepository.save(payment);
     }
 
-    public Payment findById (int paymentId) {
+    public Payment findById (Long paymentId) {
         if(paymentRepository.findById(paymentId).isPresent()) {
             return  paymentRepository.findById(paymentId).get();
         } else {
@@ -63,4 +63,5 @@ public class PaymentService {
     public List<Payment> findByStudentAndPeriod(Long studentId, LocalDate startDate, LocalDate endDate) {
         return paymentRepository.findByStudentIdAndDateBetween(studentId, startDate, endDate);
     }
+
 }

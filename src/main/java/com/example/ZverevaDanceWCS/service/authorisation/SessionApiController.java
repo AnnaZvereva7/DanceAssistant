@@ -1,14 +1,9 @@
 package com.example.ZverevaDanceWCS.service.authorisation;
 
-import com.example.ZverevaDanceWCS.service.model.user.User;
-import com.example.ZverevaDanceWCS.service.model.user.UserRepository;
-import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;

@@ -13,8 +13,9 @@ import lombok.Setter;
 public class UserShortDTO {
     private Long id;
     private String name;
+    private String role;
 
     public static UserShortDTO toShortDTO(User user) {
-        return new UserShortDTO(user.getId(), user.getName());
+        return new UserShortDTO(user.getId(), user.getName(), user.getRole().toString());
     }
 }

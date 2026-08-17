@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DanceAssistant Admin</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .user-panel {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            background: #f9f9f9;
+            padding: 12px 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .user-info #userNameSession {
+            font-weight: bold;
+        }
+
+        .user-info #statusSession {
+            color: #555;
+            font-size: 13px;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+
+        h1 {
+            margin-left: 20px;
+        }
+
+        .top-buttons {
+            margin-left: 0;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 110px);
+        }
+
+        .left-panel {
+            width: 40%;
+            border-right: 1px solid #ccc;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            width: 60%;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        button {
+            padding: 8px 14px;
+            margin: 10px 20px;
+            cursor: pointer;
+        }
+
+        .small-btn {
+            margin: 8px 8px 8px 0;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 16px;
+        }
+
+        li {
+            padding: 4px 0;
+        }
+
+        a {
+            cursor: pointer;
+            color: #0066cc;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        label {
+            display: block;
+            margin-top: 8px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 6px;
+            box-sizing: border-box;
+            margin-top: 4px;
+        }
+
+        input[readonly], textarea[readonly] {
+            background: #f3f3f3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: #f5f5f5;
+        }
+
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+            margin-bottom: 12px;
+        }
+
+        .date-row button {
+            margin: 0;
+            height: 34px;
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            width: 420px;
+            max-width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .hidden, .modal.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="user-panel">
+    <div class="user-info">
+        <div id="userNameSession">UserName</div>
+        <div id="statusSession">Status</div>
+    </div>
+
+    <form method="post" action="/logout">
+        <button type="submit" class="logout-btn">Logout</button>
+    </form>
+</div>
+
+<h1>DanceAssistant Admin</h1>
+<div class="top-buttons">
+    <button id="loadUsersBtn">Users</button>
+    <button id="loadLessonsBtn">Lessons</button>
+    <a href="trainer.html"><button type="button">Back to Trainer Mode</button></a>
+</div>
+
+<div class="container">
+    <div class="left-panel">
+        <div id="usersTab">
+            <h3>Users</h3>
+            <ul id="usersList"></ul>
+        </div>
+
+        <div id="lessonsTab" class="hidden">
+            <h3>Lessons</h3>
+            <ul id="lessonsList"></ul>
+            <p>Lesson block will be completed later.</p>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div id="userDetails" class="hidden">
+            <h3>User details</h3>
+
+            <label>User Id:
+                <input type="number" id="userId" readonly>
+            </label>
+
+            <label>Name:
+                <input type="text" id="userName">
+            </label>
+
+            <label>Email:
+                <input type="email" id="userEmail">
+            </label>
+
+            <label>Role / Status:
+                <select id="userRole">
+                    <option value="BY_REQUEST">BY_REQUEST</option>
+                    <option value="PERMANENT">PERMANENT</option>
+                    <option value="OLD">OLD</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="USER">USER</option>
+                    <option value="TRAINER">TRAINER</option>
+                </select>
+            </label>
+
+            <label> Messenger:
+                <select id="userMessenger">
+                    <option value="NONE">NONE</option>
+                    <option value="WHATSAPP">WHATSAPP</option>
+                    <option value="TELEGRAM">TELEGRAM</option>
+                </select>
+            </label>
+
+            <label>Trainers:
+                <textarea id="userTrainers" rows="4" readonly></textarea>
+            </label>
+
+            <button id="saveChangesUserBtn">Save Changes</button>
+            <button id="addTrainerBtn">Add trainer</button>
+            <button id="showTransactionsBtn">Show transaction history</button>
+            <button id="deleteUserBtn">Delete user</button>
+
+        </div>
+
+        <div id="transactionHistory" class="hidden">
+            <h3>Transaction history</h3>
+
+            <div class="date-row">
+                <label>Start date:
+                    <input type="date" id="startDate">
+                </label>
+
+                <label>End date:
+                    <input type="date" id="endDate">
+                </label>
+
+                <button id="loadTransactionsBtn" type="button">Load</button>
+            </div>
+
+            <button id="backToUserInfoBtn" class="small-btn">Back to user info</button>
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Amount</th>
+                </tr>
+                </thead>
+                <tbody id="transactionsTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="lessonDetails" class="hidden">
+            <h3>Lesson details</h3>
+            <p>Lesson details and editing will be completed later.</p>
+        </div>
+    </div>
+</div>
+
+<div id="addTrainerModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Select trainer</h3>
+        <ul id="trainersList"></ul>
+        <div class="modal-actions">
+            <button id="closeTrainerModalBtn" type="button">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "/admin";
+
+    const loadUsersBtn = document.getElementById("loadUsersBtn");
+    const loadLessonsBtn = document.getElementById("loadLessonsBtn");
+    const usersTab = document.getElementById("usersTab");
+    const lessonsTab = document.getElementById("lessonsTab");
+    const userDetails = document.getElementById("userDetails");
+    const transactionHistory = document.getElementById("transactionHistory");
+    const lessonDetails = document.getElementById("lessonDetails");
+    const addTrainerModal = document.getElementById("addTrainerModal");
+
+    let currentUserId = null;
+
+    loadUsersBtn.addEventListener("click", () => {
+        showUsersTab();
+        loadUsers();
+    });
+
+    loadLessonsBtn.addEventListener("click", () => {
+        showLessonsTab();
+        loadLessons();
+    });
+
+    document.getElementById("saveChangesUserBtn").addEventListener("click", saveChangesUser);
+    document.getElementById("addTrainerBtn").addEventListener("click", openAddTrainerModal);
+    document.getElementById("showTransactionsBtn").addEventListener("click", showTransactionHistory);
+    document.getElementById("deleteUserBtn").addEventListener("click",deleteUser);
+    document.getElementById("loadTransactionsBtn").addEventListener("click", loadTransactions);
+    document.getElementById("backToUserInfoBtn").addEventListener("click", () => {
+        transactionHistory.classList.add("hidden");
+        userDetails.classList.remove("hidden");
+    });
+    document.getElementById("closeTrainerModalBtn").addEventListener("click", hideAddTrainerModal);
+
+    addTrainerModal.addEventListener("click", (event) => {
+        if (event.target === addTrainerModal) {
+            hideAddTrainerModal();
+        }
+    });
+
+    function showUsersTab() {
+        usersTab.classList.remove("hidden");
+        lessonsTab.classList.add("hidden");
+        lessonDetails.classList.add("hidden");
+    }
+
+    function showLessonsTab() {
+        lessonsTab.classList.remove("hidden");
+        usersTab.classList.add("hidden");
+        userDetails.classList.add("hidden");
+        transactionHistory.classList.add("hidden");
+        lessonDetails.classList.add("hidden");
+    }
+
+    function showAddTrainerModal() {
+        addTrainerModal.classList.remove("hidden");
+        addTrainerModal.style.display = "flex";
+    }
+
+    function hideAddTrainerModal() {
+        addTrainerModal.classList.add("hidden");
+        addTrainerModal.style.display = "none";
+    }
+
+    async function loadUsers() {
+        const list = document.getElementById("usersList");
+        list.innerHTML = "<li>Loading...</li>";
+
+        try {
+            const response = await fetch(API_BASE + "/users", { credentials: "same-origin" });
+
+            if (!response.ok) {
+                list.innerHTML = "<li>Error loading users</li>";
+                return;
+            }
+
+            const users = await response.json();
+            list.innerHTML = "";
+
+            if (!Array.isArray(users) || users.length === 0) {
+                list.innerHTML = "<li>No users found</li>";
+                return;
+            }
+
+            users.forEach(user => {
+                const li = document.createElement("li");
+                const link = document.createElement("a");
+                link.href = "#";
+                link.textContent = `${user.name ?? "No name"} (${user.role ?? "no status"})`;
+                link.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    loadUserDetails(user.id);
+                });
+                li.appendChild(link);
+                list.appendChild(li);
+            });
+        } catch (error) {
+            console.error("Error loading users:", error);
+            list.innerHTML = "<li>Error loading users</li>";
+        }
+    }
+
+    async function loadUserDetails(id) {
+        try {
+            const response = await fetch(API_BASE + "/user_info/" + id, { credentials: "same-origin" });
+
+            if (!response.ok) {
+                alert("Failed to load user data.");
+                return;
+            }
+
+            const user = await response.json();
+            currentUserId = user.id ?? user.studentId ?? id;
+
+            document.getElementById("userId").value = currentUserId;
+            document.getElementById("userName").value = user.name ?? "";
+            document.getElementById("userEmail").value = user.email ?? "";
+            document.getElementById("userRole").value = user.role ?? "BY_REQUEST";
+            document.getElementById("userMessenger").value = user.messenger ?? "NONE";
+            document.getElementById("userTrainers").value = formatTrainers(user.trainers ?? user.trainersString ?? user.trainersAsString);
+
+            transactionHistory.classList.add("hidden");
+            lessonDetails.classList.add("hidden");
+            userDetails.classList.remove("hidden");
+        } catch (error) {
+            console.error("Error loading user:", error);
+            alert("Failed to load user data.");
+        }
+    }
+
+    function formatTrainers(trainers) {
+        if (!trainers) return "";
+        if (typeof trainers === "string") return trainers;
+        if (Array.isArray(trainers)) {
+            return trainers
+                .map(trainer => trainer.name ?? trainer.id ?? "")
+                .filter(Boolean)
+                .join(", ");
+        }
+        return String(trainers);
+    }
+
+    async function saveChangesUser() {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+        const id = document.getElementById("userId").value;
+
+        if (!id) {
+            alert("Please select a user first.");
+            return;
+        }
+
+        const userData = {
+            id: Number(id),
+            studentId: Number(id),
+            name: document.getElementById("userName").value.trim(),
+            email: document.getElementById("userEmail").value.trim(),
+            role: document.getElementById("userRole").value,
+            messenger: document.getElementById("userMessenger").value
+        };
+
+        try {
+            const response = await fetch(API_BASE + "/change_user", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                },
+                credentials: "same-origin",
+                body: JSON.stringify(userData)
+            });
+
+            if (!response.ok) {
+                console.error("Error:", response.status, response.statusText);
+                alert("Failed to update user data.");
+                return;
+            }
+
+            alert("User data updated successfully.");
+            await loadUserDetails(id);
+            await loadUsers();
+        } catch (error) {
+            console.error("Error updating user:", error);
+            alert("An error occurred while updating user data.");
+        }
+    }
+
+    async function openAddTrainerModal() {
+        const studentId = document.getElementById("userId").value;
+
+        if (!studentId) {
+            alert("Please select a user first.");
+            return;
+        }
+
+        const list = document.getElementById("trainersList");
+        list.innerHTML = "<li>Loading...</li>";
+        showAddTrainerModal();
+
+        try {
+            const response = await fetch(API_BASE + "/trainers", { credentials: "same-origin" });
+
+            if (!response.ok) {
+                list.innerHTML = "<li>Error loading trainers</li>";
+                return;
+            }
+
+            const trainers = await response.json();
+            list.innerHTML = "";
+
+            if (!Array.isArray(trainers) || trainers.length === 0) {
+                list.innerHTML = "<li>No trainers found</li>";
+                return;
+            }
+
+            trainers.forEach(trainer => {
+                const li = document.createElement("li");
+                const link = document.createElement("a");
+                link.href = "#";
+                link.textContent = trainer.name ?? "No name";
+                link.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    await addTrainer(studentId, trainer.id);
+                });
+                li.appendChild(link);
+                list.appendChild(li);
+            });
+        } catch (error) {
+            console.error("Error loading trainers:", error);
+            list.innerHTML = "<li>Error loading trainers</li>";
+        }
+    }
+
+    async function addTrainer(studentId, trainerId) {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+        try {
+            const response = await fetch(API_BASE + "/add_trainer/" + studentId + "/" + trainerId, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                },
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                console.error("Error:", response.status, response.statusText);
+                alert("Failed to add trainer.");
+                return;
+            }
+
+            hideAddTrainerModal();
+            await loadUserDetails(studentId);
+            alert("Trainer added successfully.");
+        } catch (error) {
+            console.error("Error adding trainer:", error);
+            alert("An error occurred while adding trainer.");
+        }
+    }
+
+    async function showTransactionHistory() {
+        const id = document.getElementById("userId").value;
+
+        if (!id) {
+            alert("Please select a user first.");
+            return;
+        }
+
+        setCurrentMonthDates();
+        userDetails.classList.add("hidden");
+        transactionHistory.classList.remove("hidden");
+        await loadTransactions();
+    }
+
+    function setCurrentMonthDates() {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        document.getElementById("startDate").value = toDateInputValue(firstDay);
+        document.getElementById("endDate").value = toDateInputValue(lastDay);
+    }
+
+    function toDateInputValue(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    async function deleteUser() {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+        const id = document.getElementById("userId").value;
+
+        if (!id) {
+            alert("Please select a user first.");
+            return;
+        }
+
+        if (!confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + "/delete_user?userId=" + encodeURIComponent(id), {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                },
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                console.error("Error:", response.status, response.statusText);
+                alert("Failed to delete user.");
+                return;
+            }
+
+            alert("User deleted successfully.");
+            currentUserId = null;
+            userDetails.classList.add("hidden");
+            transactionHistory.classList.add("hidden");
+            await loadUsers();
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            alert("An error occurred while deleting the user.");
+        }
+    }
+
+    async function loadTransactions() {
+        const id = document.getElementById("userId").value;
+        const startDate = document.getElementById("startDate").value;
+        const endDate = document.getElementById("endDate").value;
+        const tbody = document.getElementById("transactionsTableBody");
+
+        if (!id) {
+            alert("Please select a user first.");
+            return;
+        }
+
+        if (!startDate || !endDate) {
+            alert("Please select start and end dates.");
+            return;
+        }
+
+        tbody.innerHTML = "<tr><td colspan='5'>Loading...</td></tr>";
+        const params = new URLSearchParams();
+        if (startDate !== "") {
+            params.append("startDate", startDate);
+        }
+        if (endDate !== "") {
+            params.append("endDate", endDate);
+        }
+
+        try {
+            const response = await fetch(
+                API_BASE + "/user_transaction_history/" + id + "?"+params.toString(),
+                { credentials: "same-origin" }
+            );
+
+            if (!response.ok) {
+                tbody.innerHTML = "<tr><td colspan='5'>Error loading transactions</td></tr>";
+                return;
+            }
+
+            const transactions = await response.json();
+            tbody.innerHTML = "";
+
+            if (!Array.isArray(transactions) || transactions.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5'>No transactions found</td></tr>";
+                return;
+            }
+
+            transactions.forEach(transaction => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${escapeHtml(transaction.id ?? "")}</td>
+                    <td>${escapeHtml(transaction.date ?? "")}</td>
+                    <td>${escapeHtml(transaction.type ?? "")}</td>
+                    <td>${escapeHtml(transaction.status ?? "")}</td>
+                    <td>${escapeHtml(transaction.amount ?? "")}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (error) {
+            console.error("Error loading transactions:", error);
+            tbody.innerHTML = "<tr><td colspan='5'>Error loading transactions</td></tr>";
+        }
+    }
+
+    async function loadLessonsWithFilter() {
+        const list = document.getElementById("lessonsList");
+        list.innerHTML = "<li>Lesson loading endpoint will be added later.</li>";
+    }
+
+    function getCookie(name) {
+        const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+        return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    async function loadMe() {
+        try {
+            const res = await fetch("/api/me", { credentials: "same-origin" });
+            if (res.status === 401) {
+                window.location.href = "-";
+                return;
+            }
+            const data = await res.json();
+            document.getElementById("userNameSession").textContent = data.userName ?? "";
+            document.getElementById("statusSession").textContent = data.status ?? "";
+        } catch (error) {
+            console.error("Error loading session user:", error);
+        }
+    }
+
+    loadMe();
+    loadUsers();
+</script>
+
+</body>
+</html>

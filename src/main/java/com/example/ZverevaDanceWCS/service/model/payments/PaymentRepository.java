@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
-    public Optional<Payment> findById (int id);
+    public Optional<Payment> findById (Long id);
     public List<Payment> findByStudentId (Long studentId);
     public List<Payment> findByDateBetweenAndTrainerId(LocalDate startDate, LocalDate endDate, Long trainerId);
     public List<Payment> findByStudentIdAndDateBetween(Long studentId, LocalDate startDate, LocalDate endDate);

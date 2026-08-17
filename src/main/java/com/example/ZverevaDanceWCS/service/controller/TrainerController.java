@@ -1,6 +1,5 @@
 package com.example.ZverevaDanceWCS.service.controller;
 
-import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventService;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
@@ -22,7 +21,7 @@ import com.example.ZverevaDanceWCS.service.model.user.*;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.TrainerInfoDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserFullDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByAdminDto;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByTrainerDto;
 import com.example.ZverevaDanceWCS.service.telegramBot.TelegramBot;
 import com.example.ZverevaDanceWCS.service.telegramBot.TelegramEnterCode.TelegramEnterCodeService;
 import jakarta.servlet.http.HttpSession;
@@ -56,7 +55,7 @@ public class TrainerController {
     final TelegramEnterCodeService telegramEnterCodeService;
 
 
-    public TrainerController(UserService userService, UserRepository userRepository, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService, TelegramEnterCodeService telegramEnterCodeService) {
+    public TrainerController(UserService userService, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService, TelegramEnterCodeService telegramEnterCodeService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
@@ -180,25 +179,14 @@ public class TrainerController {
 
     // User endpoint, update user info from DTO
     @PutMapping("/user/change")
-    public UserFullDTO updateUser(@Valid @RequestBody UserUpdateByAdminDto userUpdateByAdminDto, HttpSession session) {
-        User userToUpdate = userService.findById(userUpdateByAdminDto.getStudentId());
+    public UserFullDTO updateUser(@Valid @RequestBody UserUpdateByTrainerDto userUpdateByTrainerDto, HttpSession session) {
+
+        User updatedUser = userService.updateByTrainer(userUpdateByTrainerDto);
         User trainer = findTrainerFromSession(session);
-        if (!userToUpdate.getName().equals(userUpdateByAdminDto.getName())) {
-            userToUpdate.setName(userUpdateByAdminDto.getName());
-        }
-        if (!userToUpdate.getRole().equals(userUpdateByAdminDto.getRole())) {
-            userToUpdate.setRole(userUpdateByAdminDto.getRole());
-        }
-        if (!userUpdateByAdminDto.getEmail().isBlank()) {
-            userToUpdate.setEmail(userUpdateByAdminDto.getEmail());
-        } else if (userToUpdate.getEmail() != null) {
-            userToUpdate.setEmail(null);
-        }
-        userService.saveUser(userToUpdate);
 
-        List<Schedule> oldSchedules = scheduleService.findAllByStudentIdAndTrainerId(userToUpdate.getId(), trainer.getId());
+        List<Schedule> oldSchedules = scheduleService.findAllByStudentIdAndTrainerId(updatedUser.getId(), trainer.getId());
 
-        User savedUser = userService.findByIdWithInfo(userToUpdate.getId());
+        User savedUser = userService.findByIdWithInfo(updatedUser.getId());
         return UserFullDTO.toFullDTO(savedUser, oldSchedules);
     }
 

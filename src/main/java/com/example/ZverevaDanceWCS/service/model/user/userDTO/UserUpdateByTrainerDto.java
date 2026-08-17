@@ -1,5 +1,6 @@
 package com.example.ZverevaDanceWCS.service.model.user.userDTO;
 
+import com.example.ZverevaDanceWCS.service.model.user.Messenger;
 import com.example.ZverevaDanceWCS.service.model.user.UserRole;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import jakarta.validation.constraints.*;
@@ -14,7 +15,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserUpdateByAdminDto {
+public class UserUpdateByTrainerDto {
     @NotNull
     @Positive
     Long studentId;
@@ -24,6 +25,7 @@ public class UserUpdateByAdminDto {
     @Email
     String email;
     UserRole role;
+    Messenger messenger;
 
     List<ScheduleShortDTO> scheduleDTOs;
 }
