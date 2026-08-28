@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.calendarEvent;
+package com.example.ZverevaDanceWCS.service.model.appCalendarEvent;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;

@@ -1,13 +1,13 @@
 package com.example.ZverevaDanceWCS.service.controller;
 
 import com.example.ZverevaDanceWCS.service.Constant;
-import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventService;
+import com.example.ZverevaDanceWCS.service.model.appCalendarEvent.CalendarEventService;
 import com.example.ZverevaDanceWCS.service.model.calendarLink.CalendarLinkService;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.freeSlots.*;
-import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventDto;
-import com.example.ZverevaDanceWCS.service.model.calendarEvent.TimeRequest;
+import com.example.ZverevaDanceWCS.service.model.appCalendarEvent.CalendarEventDto;
+import com.example.ZverevaDanceWCS.service.model.appCalendarEvent.TimeRequest;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.Messenger;

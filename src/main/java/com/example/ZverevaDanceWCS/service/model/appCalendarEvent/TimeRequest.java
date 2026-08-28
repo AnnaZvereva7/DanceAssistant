@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.calendarEvent;
+package com.example.ZverevaDanceWCS.service.model.appCalendarEvent;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,17 +1,16 @@
 package com.example.ZverevaDanceWCS.service.model.lessons;
 
 import com.example.ZverevaDanceWCS.service.googleCalendar.GoogleCalendarService;
-import com.example.ZverevaDanceWCS.service.googleCalendar.LessonMailService;
+import com.example.ZverevaDanceWCS.service.model.mailCalendarEvent.LessonMailService;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeException;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.freeSlots.*;
-import com.example.ZverevaDanceWCS.service.model.calendarEvent.TimeRequest;
+import com.example.ZverevaDanceWCS.service.model.appCalendarEvent.TimeRequest;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserRole;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
-import jakarta.mail.MessagingException;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -110,11 +109,13 @@ public class LessonService {
         //todo email new lesson
         if (lesson.getStudent().getEmail() != null && !lesson.getStudent().getEmail().isBlank()) {
             log.info("отправка письма");
-            try {
-                lessonMailService.sendLessonCreatedEmail(lesson, lesson.getStudent().getEmail());
-            } catch (MessagingException e) {
-                throw new RuntimeException(e);
-            }
+                if(lesson.getStudent().getEmail()!=null && !lesson.getStudent().getEmail().isBlank()) {
+                    lessonMailService.sendLessonCreated(lesson);
+                } else {
+                    log.info(
+                            "Calendar email was not sent for lesson {}: student has no email",
+                            lesson.getId());
+                }
         }
         String eventId = calendarService.addEvent(lesson.getTitle(), "", lesson.getStartTime(), lesson.getEndTime());
         lesson.setGoogleEventId(eventId);

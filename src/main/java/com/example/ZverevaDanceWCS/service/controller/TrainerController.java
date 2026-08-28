@@ -1,6 +1,6 @@
 package com.example.ZverevaDanceWCS.service.controller;
 
-import com.example.ZverevaDanceWCS.service.model.calendarEvent.CalendarEventService;
+import com.example.ZverevaDanceWCS.service.model.appCalendarEvent.CalendarEventService;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;

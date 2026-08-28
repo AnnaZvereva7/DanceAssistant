@@ -100,5 +100,14 @@
         user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
         created_at TIMESTAMPTZ NOT NULL,
         expired_at TIMESTAMPTZ NOT NULL
-    )
+    );
+
+    create table if not exists calendar_event_sequences (
+    lesson_id SERIAL PRIMARY KEY,
+    sequence_number INTEGER NOT NULL DEFAULT 0,
+    CONSTRAINT fk_calendar_event_sequences_lesson
+    FOREIGN KEY (lesson_id)
+        REFERENCES lessons(lesson_id)
+        ON DELETE CASCADE
+    );
 

@@ -10,7 +10,7 @@ public class Constant {
 
     public static final long adminChatId = 152942083;
 
-    public static final int permanentStudentCost = 30;
+    public static final int permanentStudentCost = 30; //todo - change settings of lessons cost
     public static final int newStudentCost=40;
 
     public static final String CNR = "Command not recognized";

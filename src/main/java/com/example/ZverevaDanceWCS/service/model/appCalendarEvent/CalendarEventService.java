@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.calendarEvent;
+package com.example.ZverevaDanceWCS.service.model.appCalendarEvent;
 
 import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeException;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
