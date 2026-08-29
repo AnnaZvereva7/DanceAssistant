@@ -106,19 +106,14 @@ public class LessonService {
         trainerStudentService.saveLink(newLesson.getTrainer(), newLesson.getStudent());
         lesson.setTitle(newLesson.getTitle() + " (id=" + lesson.getId() + ")");
         slotService.bookPartOfFreeSlot(lesson.getStartTime(), lesson.getEndTime(), lesson.getTrainer().getId());
-        //todo email new lesson
-        if (lesson.getStudent().getEmail() != null && !lesson.getStudent().getEmail().isBlank()) {
-            log.info("отправка письма");
-                if(lesson.getStudent().getEmail()!=null && !lesson.getStudent().getEmail().isBlank()) {
-                    lessonMailService.sendLessonCreated(lesson);
-                } else {
-                    log.info(
-                            "Calendar email was not sent for lesson {}: student has no email",
-                            lesson.getId());
-                }
-        }
         String eventId = calendarService.addEvent(lesson.getTitle(), "", lesson.getStartTime(), lesson.getEndTime());
         lesson.setGoogleEventId(eventId);
+        if (lesson.getStudent().getEmail() != null && !lesson.getStudent().getEmail().isBlank()) {
+            log.info("отправка письма");
+            lessonMailService.sendLessonCreated(lesson);
+        } else {
+            log.info("Calendar email(creation) was not sent for lesson {}: student has no email", lesson.getId());
+        }
         return lessonsRepository.save(lesson);
     }
 
@@ -127,12 +122,16 @@ public class LessonService {
         if (lesson.getGoogleEventId() != null) {
             calendarService.updateEvent(lesson.getGoogleEventId(), lesson.getTitle(), lesson.getStudent().getAdditionalInfo(), lesson.getStartTime(), lesson.getEndTime());
         }
-        //todo email change time lesson
+        if (lesson.getStudent().getEmail() != null && !lesson.getStudent().getEmail().isBlank()) {
+            lessonMailService.sendLessonChange(lesson);
+        } else {
+            log.info("Calendar email(update) was not sent for lesson {}: student has no email", lesson.getId());
+        }
         return lessonsRepository.save(lesson);
     }
 
-    public Lesson updateLessonInBase(Lesson lesson) {
-        return lessonsRepository.save(lesson);
+    public void updateLessonInBase(Lesson lesson) {
+        lessonsRepository.save(lesson);
     }
 
     @Transactional
@@ -141,11 +140,15 @@ public class LessonService {
                 || lesson.getStatus() == LessonStatus.PLANNED
                 || lesson.getStatus() == LessonStatus.PENDING_TRAINER_CONFIRMATION) {
             lesson.setStatus(LessonStatus.CANCELED);
+            if (lesson.getStudent().getEmail() != null && !lesson.getStudent().getEmail().isBlank()) {
+                lessonMailService.sendLessonCancel(lesson);
+            } else {
+                log.info("Calendar email(cancel) was not sent for lesson {}: student has no email", lesson.getId());
+            }
             if (lesson.getGoogleEventId() != null) {
                 calendarService.deleteEvent(lesson.getGoogleEventId());
                 lesson.setGoogleEventId(null);
             }
-            //todo email delete lesson
             slotService.addFreeTimeSlot(lesson.getStartTime(), lesson.getEndTime(), lesson.getTrainer().getId());
             return lessonsRepository.save(lesson);
         } else {
@@ -301,18 +304,18 @@ public class LessonService {
     public List<Lesson> getLessonsWithFilter(Long studentId, LocalDate startDate, LocalDate endDate, LessonStatus status) {
         if (studentId != null) {
             if (startDate != null & endDate != null & status != null) {
-                if(startDate.isAfter(endDate)) {
+                if (startDate.isAfter(endDate)) {
                     throw new RuntimeException("Start date cannot be after end date");
                 }
                 return lessonsRepository.findByStudentIdAndStatusAndStartTimeBetween(studentId, status, startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
             } else if (startDate == null && endDate == null && status != null) {
                 return lessonsRepository.findByStudentIdAndStatus(studentId, status);
             } else if (startDate != null && endDate == null && status != null) {
-                return  lessonsRepository.findByStudentIdAndStatusAndStartTimeAfter(studentId, status, startDate.atStartOfDay());
+                return lessonsRepository.findByStudentIdAndStatusAndStartTimeAfter(studentId, status, startDate.atStartOfDay());
             } else if (startDate == null && endDate != null && status != null) {
                 return lessonsRepository.findByStudentIdAndStatusAndStartTimeBefore(studentId, status, endDate.atStartOfDay().plusDays(1));
             } else if (startDate != null && endDate != null && status == null) {
-                if(startDate.isAfter(endDate)) {
+                if (startDate.isAfter(endDate)) {
                     throw new RuntimeException("Start date cannot be after end date");
                 }
                 return lessonsRepository.findByStudentIdAndStartTimeBetween(studentId, startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
@@ -327,25 +330,25 @@ public class LessonService {
             }
         } else {
             if (startDate != null && endDate != null && status != null) {
-                if(startDate.isAfter(endDate)) {
+                if (startDate.isAfter(endDate)) {
                     throw new RuntimeException("Start date cannot be after end date");
                 }
                 return lessonsRepository.findByStatusAndStartTimeBetween(status, startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
             } else if (startDate == null && endDate == null && status != null) {
                 return lessonsRepository.findByStatus(status);
             } else if (startDate != null && endDate == null && status != null) {
-                return  lessonsRepository.findByStatusInAndStartTimeAfter(List.of(status), startDate.atStartOfDay());
+                return lessonsRepository.findByStatusInAndStartTimeAfter(List.of(status), startDate.atStartOfDay());
             } else if (startDate == null && endDate != null && status != null) {
                 return lessonsRepository.findByStatusInAndStartTimeBefore(List.of(status), endDate.atStartOfDay().plusDays(1));
             } else if (startDate != null && endDate != null && status == null) {
-                if(startDate.isAfter(endDate)) {
+                if (startDate.isAfter(endDate)) {
                     throw new RuntimeException("Start date cannot be after end date");
                 }
-                return lessonsRepository.findByStartTimeBetween( startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
+                return lessonsRepository.findByStartTimeBetween(startDate.atStartOfDay(), endDate.atStartOfDay().plusDays(1));
             } else if (startDate != null && endDate == null && status == null) {
                 return lessonsRepository.findByStartTimeAfter(startDate.atStartOfDay());
             } else if (startDate == null && endDate != null && status == null) {
-                return lessonsRepository.findByStartTimeBefore( endDate.atStartOfDay());
+                return lessonsRepository.findByStartTimeBefore(endDate.atStartOfDay());
             } else if (startDate == null && endDate == null && status == null) {
                 return lessonsRepository.findAll();
             } else {
@@ -355,7 +358,7 @@ public class LessonService {
     }
 
     public Boolean checkIfExistsUnfinishedLessons(Long userId) {
-        List<Lesson> lessons=findByStatusInAndStudentId(List.of(LessonStatus.PENDING_TRAINER_CONFIRMATION,
+        List<Lesson> lessons = findByStatusInAndStudentId(List.of(LessonStatus.PENDING_TRAINER_CONFIRMATION,
                 LessonStatus.PENDING_TRAINER_CONFIRMATION, LessonStatus.PLANNED, LessonStatus.COMPLETED), userId);
         return !lessons.isEmpty();
     }

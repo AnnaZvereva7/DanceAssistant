@@ -50,6 +50,48 @@ public class LessonMailService {
         );
     }
 
+    public void sendLessonChange(Lesson lesson) {
+        int sequence = sequenceService.increment(lesson.getId());
+
+        String ics = calendarIcsBuilder.buildRequest(
+                lesson,
+                sequence
+        );
+        send(
+                lesson,
+                "Lesson changed",
+                """
+                        Your lesson has been changed.
+
+                        New date and time: %s
+                        """.formatted(
+                        lesson.getStartTime().format(Constant.formatterDayTime)),
+                ics,
+                "REQUEST"
+        );
+    }
+
+    public void sendLessonCancel(Lesson lesson) {
+        int sequence = sequenceService.increment(lesson.getId());
+
+        String ics = calendarIcsBuilder.buildCancel(
+                lesson,
+                sequence
+        );
+        send(
+                lesson,
+                "Lesson canceled",
+                """
+                        Your lesson has been canceled.
+
+                        Date and time: %s
+                        """.formatted(
+                        lesson.getStartTime().format(Constant.formatterDayTime)),
+                ics,
+                "CANCEL"
+        );
+    }
+
     private void send(
             Lesson lesson,
             String subject,
