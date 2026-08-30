@@ -153,6 +153,21 @@
         .modal.hidden {
             display: none;
         }
+
+        .subscription-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        .subscription-text {
+            flex: 1;
+        }
     </style>
 </head>
 
@@ -218,6 +233,29 @@
             <button id="refreshCalendarLinkBtn">Refresh calendar link</button>
             <button id="getTelegramLinkBtn">Get Telegram Link</button>
             <a id="tgLink" target="_blank"></a>
+            <div id="mySubscriptionBlock">
+                <h3>My Subscription</h3>
+                <div id="mySubscriptionsList">Loading...</div>
+                <button id="addSubscriptionTypeBtn" type="button">Add new</button>
+            </div>
+            <div id="newSubscriptionModal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>New subscription type</h3>
+                    <label>Amount lessons:
+                        <input type="number" id="subscriptionAmountLessons" min="1">
+                    </label>
+                    <label>Price:
+                        <input type="number" id="subscriptionPrice" min="1">
+                    </label>
+                    <label>Duration months:
+                        <input type="number" id="subscriptionDurationMonths" min="1">
+                    </label>
+                    <div class="modal-actions">
+                        <button id="saveSubscriptionTypeBtn" type="button">Save</button>
+                        <button id="closeSubscriptionModalBtn" type="button">Cancel</button>
+                    </div>
+                </div>
+            </div>
         </div>
         <div id="studentDetails" class="hidden">
             <h3>Student details</h3>
@@ -389,6 +427,10 @@
     const newInfoModal = document.getElementById("newInfoModal");
     const closeNewInfoModalBtn = document.getElementById("closeNewInfoModalBtn");
     const saveChangesStudentBtn = document.getElementById("saveChangesStudentBtn");
+    const addSubscriptionTypeBtn = document.getElementById("addSubscriptionTypeBtn");
+    const newSubscriptionModal = document.getElementById("newSubscriptionModal");
+    const closeSubscriptionModalBtn = document.getElementById("closeSubscriptionModalBtn");
+    const saveSubscriptionTypeBtn = document.getElementById("saveSubscriptionTypeBtn");
 
     function showCompleteLessonModal() {
         completeLessonModal.classList.remove("hidden");
@@ -420,6 +462,16 @@
         newInfoModal.style.display = "none";
     }
 
+    function showNewSubscriptionModal() {
+        newSubscriptionModal.classList.remove("hidden");
+        newSubscriptionModal.style.display = "flex";
+    }
+
+    function hideNewSubscriptionModal() {
+        newSubscriptionModal.classList.add("hidden");
+        newSubscriptionModal.style.display = "none";
+    }
+
 
 
     /* загрузка информации тренера */
@@ -443,6 +495,7 @@
             document.getElementById("userName").value = trainer.name ?? "";
             document.getElementById("userEmail").value = trainer.email ?? "";
             document.getElementById("calendarLink").value = trainer.link ?? "";
+            await loadSubscriptionTypes();
 
            myDetails.classList.remove("hidden");
         } catch (error) {
@@ -525,6 +578,19 @@
             hideNewInfoModal();
         }
     });
+    addSubscriptionTypeBtn.addEventListener("click", () => {
+        document.getElementById("subscriptionAmountLessons").value = "";
+        document.getElementById("subscriptionPrice").value = "";
+        document.getElementById("subscriptionDurationMonths").value = "";
+        showNewSubscriptionModal();
+    });
+    closeSubscriptionModalBtn.addEventListener("click", hideNewSubscriptionModal);
+    newSubscriptionModal.addEventListener("click", (event) => {
+        if (event.target === newSubscriptionModal) {
+            hideNewSubscriptionModal();
+        }
+    });
+    saveSubscriptionTypeBtn.addEventListener("click", createSubscriptionType);
     /*todo сохранение изменений студента */
     saveChangesStudentBtn.addEventListener("click", saveChangesStudent);
    saveChangesStudentBtn.addEventListener("click", () => {
@@ -589,6 +655,7 @@
         paymentDetails.classList.add("hidden");
         hideNewLessonModal();
         hideNewInfoModal();
+        hideNewSubscriptionModal();
         myDetails.classList.add("hidden");
     });
 
@@ -604,6 +671,7 @@
         lessonsTab.classList.add("hidden");
         hideNewLessonModal();
         hideNewInfoModal();
+        hideNewSubscriptionModal();
         myDetails.classList.add("hidden");
     });
 
@@ -691,6 +759,156 @@
         } catch (error) {
             console.error(error);
             list.innerHTML = "<li>Error loading students</li>";
+        }
+    }
+
+    function subscriptionTypeToString(subscriptionType) {
+        if (typeof subscriptionType === "string") {
+            return subscriptionType;
+        }
+
+        if (subscriptionType.SubscriptionTypeString) {
+            return subscriptionType.SubscriptionTypeString;
+        }
+
+        if (subscriptionType.subscriptionTypeString) {
+            return subscriptionType.subscriptionTypeString;
+        }
+
+        const amountLessons = subscriptionType.amountLessons ?? "";
+        const price = subscriptionType.price ?? "";
+        const durationMonths = subscriptionType.durationMonths ?? "";
+        return `${amountLessons} - ${price} EUR (valid for ${durationMonths} months)`;
+    }
+
+    function getSubscriptionTypeId(subscriptionType) {
+        return subscriptionType.SubscriptionTypeId
+            ?? subscriptionType.subscriptionTypeId
+            ?? subscriptionType.id
+            ?? null;
+    }
+
+    function renderSubscriptionTypes(subscriptionTypes) {
+        const container = document.getElementById("mySubscriptionsList");
+        container.innerHTML = "";
+
+        const items = Array.isArray(subscriptionTypes)
+            ? subscriptionTypes
+            : (subscriptionTypes ? [subscriptionTypes] : []);
+
+        if (items.length === 0) {
+            return;
+        }
+
+        items.forEach(subscriptionType => {
+            const row = document.createElement("div");
+            row.className = "subscription-row";
+
+            const text = document.createElement("div");
+            text.className = "subscription-text";
+            text.textContent = subscriptionTypeToString(subscriptionType);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.addEventListener("click", () => deactivateSubscriptionType(getSubscriptionTypeId(subscriptionType)));
+
+            row.appendChild(text);
+            row.appendChild(deleteBtn);
+            container.appendChild(row);
+        });
+    }
+
+    async function loadSubscriptionTypes() {
+        const container = document.getElementById("mySubscriptionsList");
+        container.textContent = "Loading...";
+
+        try {
+            const response = await fetch(API_BASE + "/subscription_types", {
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                container.textContent = "Failed to load subscription types";
+                return;
+            }
+
+            const subscriptionTypes = await response.json();
+            renderSubscriptionTypes(subscriptionTypes);
+        } catch (error) {
+            console.error("Error loading subscription types:", error);
+            container.textContent = "Failed to load subscription types";
+        }
+    }
+
+    async function deactivateSubscriptionType(subscriptionTypeId) {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+        if (!subscriptionTypeId) {
+            alert("Subscription type id not found");
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + "/subscription_type/" + subscriptionTypeId + "/unactive", {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {
+                    "X-XSRF-TOKEN": csrf
+                }
+            });
+
+            if (!response.ok) {
+                alert("Failed to delete subscription type");
+                return;
+            }
+
+            await loadMyInfo();
+        } catch (error) {
+            console.error("Error deactivating subscription type:", error);
+            alert("Failed to delete subscription type");
+        }
+    }
+
+    async function createSubscriptionType() {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+        try {
+            const amountLessons = Number(document.getElementById("subscriptionAmountLessons").value);
+            const price = Number(document.getElementById("subscriptionPrice").value);
+            const durationMonths = Number(document.getElementById("subscriptionDurationMonths").value);
+
+            if (!amountLessons || !price || !durationMonths) {
+                alert("Fill all subscription type fields");
+                return;
+            }
+
+            const body = {
+                amountLessons: amountLessons,
+                price: price,
+                durationMonths: durationMonths
+            };
+
+            const response = await fetch(API_BASE + "/new_subscription_type", {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                alert("Failed to save subscription type");
+                return;
+            }
+
+            hideNewSubscriptionModal();
+            await loadMyInfo();
+        } catch (error) {
+            console.error("Error creating subscription type:", error);
+            alert("Failed to save subscription type");
         }
     }
 

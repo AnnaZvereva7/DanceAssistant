@@ -10,6 +10,8 @@ import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDT
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUpdateDto;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionTypeService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionTypeStringDTO;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
@@ -53,9 +55,10 @@ public class TrainerController {
     final CalendarEventService calendarEventService;
     final TrainerStudentService trainerStudentService;
     final TelegramEnterCodeService telegramEnterCodeService;
+    final SubscriptionTypeService subscriptionTypeService;
 
 
-    public TrainerController(UserService userService, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService, TelegramEnterCodeService telegramEnterCodeService) {
+    public TrainerController(UserService userService, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService, TelegramEnterCodeService telegramEnterCodeService, SubscriptionTypeService subscriptionTypeService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
@@ -65,6 +68,7 @@ public class TrainerController {
         this.calendarEventService = calendarEventService;
         this.trainerStudentService = trainerStudentService;
         this.telegramEnterCodeService = telegramEnterCodeService;
+        this.subscriptionTypeService = subscriptionTypeService;
     }
 
     @PostMapping("new_user/{name}")
@@ -294,6 +298,12 @@ public class TrainerController {
         String response= telegramEnterCodeService.createNewLink(trainer.getId());
         log.info(response);
         return Map.of("link", response);
+    }
+
+    @GetMapping("/subscription_types")
+    public List<SubscriptionTypeStringDTO> getSubscriptionTypes(HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        return subscriptionTypeService.getAllSubscriptionTypes(trainer.getId());
     }
 
 }
