@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 
 @Entity
 @Table(name = "students_subscriptions")
@@ -28,6 +29,12 @@ public class StudentSubscription {
     @Column (name = "student_id", nullable = false)
     Long studentId;
 
+    @Column (name = "student_name", nullable = false)
+    String studentName;
+
+    @Column (name="trainer_name", nullable = false)
+    String trainerName;
+
     @Column(name = "start_date", nullable = false)
     LocalDate startDate;
 
@@ -43,5 +50,17 @@ public class StudentSubscription {
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     SubscriptionStatus status;
+
+    @Column
+    String comment;
+
+    public static final Comparator<StudentSubscription> BY_STATUS =
+            Comparator.comparingInt(subscription ->
+                    switch (subscription.getStatus()) {
+                        case UNPAID -> 0;
+                        case ACTIVE -> 1;
+                        case EXPIRED -> 2;
+                    }
+            );
 
 }

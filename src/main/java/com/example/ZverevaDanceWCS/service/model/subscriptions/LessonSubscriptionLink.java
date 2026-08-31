@@ -26,4 +26,5 @@ public class LessonSubscriptionLink {
     @ManyToOne
     @JoinColumn(name = "subscription_id", referencedColumnName = "student_subscription_id")
     StudentSubscription subscription;
+
 }

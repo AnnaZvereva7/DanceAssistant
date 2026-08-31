@@ -7,6 +7,9 @@ import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeExcept
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.freeSlots.*;
 import com.example.ZverevaDanceWCS.service.model.appCalendarEvent.TimeRequest;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.*;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.StudentSubscriptionFullDTO;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.StudentSubscriptionNewDTO;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import com.example.ZverevaDanceWCS.service.model.user.UserRole;
@@ -34,15 +37,19 @@ public class LessonService {
     private final TrainerStudentService trainerStudentService;
     private final FreeSlotService slotService;
     private final LessonMailService lessonMailService;
+    private final SubscriptionTypeService subscriptionTypeService;
+    private final SubscriptionService subscriptionService;
 
     public LessonService(LessonsRepository lessonsRepository, GoogleCalendarService calendarService, UserService userService,
-                         TrainerStudentService trainerStudentService, FreeSlotService slotService, LessonMailService lessonMailService) {
+                         TrainerStudentService trainerStudentService, FreeSlotService slotService, LessonMailService lessonMailService, SubscriptionTypeService subscriptionTypeService, SubscriptionService subscriptionService) {
         this.lessonsRepository = lessonsRepository;
         this.calendarService = calendarService;
         this.userService = userService;
         this.trainerStudentService = trainerStudentService;
         this.slotService = slotService;
         this.lessonMailService = lessonMailService;
+        this.subscriptionTypeService = subscriptionTypeService;
+        this.subscriptionService = subscriptionService;
     }
 
     public List<Lesson> findByStatusAndTrainerId(LessonStatus status, Long trainerId) {
@@ -188,22 +195,30 @@ public class LessonService {
     }
 
     public Lesson lessonCompleted(Lesson lesson) {
-        lesson.setCostAndForPayment();
         User student = lesson.getStudent();
-        int balance = student.getBalance();
-        int forPay = lesson.getForPayment();
-        student.setBalance(balance - forPay);
-        if (balance > 0 && balance < forPay) {
-            lesson.setForPayment(forPay - balance);
-            lesson.setStatus(LessonStatus.COMPLETED);
-        } else if (balance >= forPay) {
-            lesson.setForPayment(0);
+        //todo check subscription and reduce remaining lessons if subscription exists
+        StudentSubscription subscription = subscriptionService.StudentActiveSubscriptionOrNull(student.getId(), lesson.getTrainer().getId());
+        if (subscription!=null) {
             lesson.setStatus(LessonStatus.PAID);
+            updateLessonInBase(lesson);
+            subscriptionService.newLinkCompletedLesson(lesson, subscription);
         } else {
-            lesson.setStatus(LessonStatus.COMPLETED);
+            lesson.setCostAndForPayment();
+            int balance = student.getBalance();
+            int forPay = lesson.getForPayment();
+            student.setBalance(balance - forPay);
+            if (balance > 0 && balance < forPay) {
+                lesson.setForPayment(forPay - balance);
+                lesson.setStatus(LessonStatus.COMPLETED);
+            } else if (balance >= forPay) {
+                lesson.setForPayment(0);
+                lesson.setStatus(LessonStatus.PAID);
+            } else {
+                lesson.setStatus(LessonStatus.COMPLETED);
+            }
+            userService.saveUser(student);
+            updateLessonInBase(lesson);
         }
-        userService.saveUser(student);
-        updateLessonInBase(lesson);
         return lesson;
     }
 
@@ -361,6 +376,40 @@ public class LessonService {
         List<Lesson> lessons = findByStatusInAndStudentId(List.of(LessonStatus.PENDING_TRAINER_CONFIRMATION,
                 LessonStatus.PENDING_TRAINER_CONFIRMATION, LessonStatus.PLANNED, LessonStatus.COMPLETED), userId);
         return !lessons.isEmpty();
+    }
+
+    public void sendLessonInvitationalEmail(Lesson lesson) {
+        if (lesson.getStudent().getEmail() != null && !lesson.getStudent().getEmail().isBlank()) {
+            lessonMailService.sendLessonCreated(lesson);
+        } else {
+            log.info("Calendar email(invitation) was not sent for lesson {}: student has no email", lesson.getId());
+        }
+    }
+
+    public void addNewSubscription(StudentSubscriptionNewDTO dto, Long userId) {
+        User student = userService.findById(userId);
+        SubscriptionType subscriptionType = subscriptionTypeService.findById(dto.getSubscriptionTypeId());
+        User trainer =userService.findById(subscriptionType.getTrainerId());
+        StudentSubscription subscription = new StudentSubscription();
+        subscription.setTrainerName(trainer.getName());
+        subscription.setStudentName(student.getName());
+        subscription.setSubscriptionType(subscriptionType);
+        subscription.setStudentId(student.getId());
+        subscription.setStartDate(dto.getStartDate());
+        subscription.setEndDate(dto.getStartDate().plusMonths(subscriptionType.getDurationMonths()));
+        subscription.setRemainingLessons(subscriptionType.getAmountLessons());
+        subscription.setCreatedAt(LocalDateTime.now());
+        subscription.setStatus(SubscriptionStatus.UNPAID);
+        subscriptionService.saveSubscription(subscription);
+    }
+
+    public StudentSubscriptionFullDTO getStudentSubscriptionFullDTO(Long subscriptionId, Long trainerId) {
+        StudentSubscription subscription = subscriptionService.findById(subscriptionId);
+        if(!subscription.getSubscriptionType().getTrainerId().equals(trainerId)) {
+            throw new RuntimeException("You are not authorized to view this subscription");
+        }
+        List<Lesson> lessons = subscriptionService.getLessonsBySubscriptionId(subscriptionId);
+        return new StudentSubscriptionFullDTO(subscription, lessons);
     }
 
 

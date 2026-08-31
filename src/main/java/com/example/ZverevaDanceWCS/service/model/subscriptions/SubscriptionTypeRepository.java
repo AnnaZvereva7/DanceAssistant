@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface SubscriptionTypeRepository extends JpaRepository<SubscriptionType, Long> {
     List<SubscriptionType> findByTrainerId(Long trainerId);
+    List<SubscriptionType> findByTrainerIdAndActive(Long trainerId, Boolean active);
 }

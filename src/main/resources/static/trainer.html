@@ -4,30 +4,46 @@
     <meta charset="UTF-8">
     <title>DanceAssistant</title>
     <style>
+        :root{
+            --bg:#f6f8fc;
+            --card:#ffffff;
+            --card2:#f9fbff;
+            --text:#1f2937;
+            --muted:#6b7280;
+            --border:rgba(15,23,42,.12);
+            --shadow:0 10px 30px rgba(15,23,42,.08);
+            --radius:16px;
+            --accent:#3b82f6;
+            --accent2:#22c55e;
+            --status-bg:#f3f4f6;
+        }
 
         body {
-            margin: 0; /* отступ вокруг всего тела страницы*/
-            font-family: Arial, sans-serif; /* какой текст использовать во всем теле, если нет ариала то ближайший подобный*/
+            margin: 0;
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+            color: var(--text);
+            background:
+                    radial-gradient(1200px 600px at 10% 0%, rgba(59,130,246,.10), transparent 60%),
+                    radial-gradient(900px 500px at 90% 20%, rgba(34,197,94,.08), transparent 55%),
+                    var(--bg);
+            min-height: 100vh;
+            padding: 24px;
         }
 
         .user-panel {
             position: fixed;
             top: 16px;
             right: 16px;
-
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-
-        gap: 8px;
-
-        background: #f9f9f9;
-        padding: 12px 16px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-
-        font-family: Arial, sans-serif;
-        z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(248,250,252,.92));
+            padding: 16px 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            z-index: 1000;
         }
 
         .user-info {
@@ -35,31 +51,54 @@
             font-size: 14px;
         }
 
-        .user-info #userName {
-            font-weight: bold;
+        .user-info #userNameSession {
+            font-weight: 700;
+            font-size: 16px;
         }
 
-        .user-info #status {
-            color: #555;
+        .user-info #statusSession {
+            color: var(--muted);
             font-size: 13px;
         }
 
         .logout-btn {
-            padding: 6px 12px;
+            appearance: none;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text);
+            padding: 10px 14px;
+            border-radius: 12px;
             cursor: pointer;
+            transition: .15s ease;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        h1 {
+            margin: 18px 0 12px;
+            font-size: 28px;
+            letter-spacing: .2px;
         }
 
         .container {
             display: flex;
-            height: 100vh;
+            gap: 18px;
+            height: calc(100vh - 110px);
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .left-panel {
             width: 40%;
-            border-right: 1px solid #ccc;
             padding: 20px;
             box-sizing: border-box;
             overflow-y: auto;
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
         }
 
         .right-panel {
@@ -67,28 +106,98 @@
             padding: 20px;
             box-sizing: border-box;
             overflow-y: auto;
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
         }
 
         button {
-            padding: 8px 14px;
-            margin: 10px 20px;
+            appearance: none;
+            padding: 10px 14px;
+            margin: 10px 10px 10px 0;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text);
+            border-radius: 999px;
             cursor: pointer;
+            transition: .15s ease;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            border-color: rgba(59,130,246,.35);
+        }
+
+        #loadMyInfoBtn,
+        #loadStudentsBtn,
+        #loadLessonsBtn,
+        #loadSubscriptionsBtn,
+        #loadPaymentBtn {
+            margin-top: 0;
+        }
+
+        #refreshCalendarLinkBtn,
+        #getTelegramLinkBtn,
+        #newStudentBtn,
+        #submitStudentBtn,
+        #newLessonBtn,
+        #newInfoBtn,
+        #saveChangesStudentBtn,
+        #addScheduleBtn,
+        #completeLessonBtn,
+        #saveChangesLessonBtn,
+        #toStudent,
+        #sendEmailInvitationBtn,
+        #sendBillBtn,
+        #paidBtn,
+        #deleteSubscriptionBtn,
+        #changeSubscriptionBtn,
+        #paidSubscriptionBtn,
+        #addSubscriptionTypeBtn,
+        #saveSubscriptionTypeBtn,
+        #addNewLessonBtn,
+        #addNewInfoBtn,
+        #nextBtn {
+            border: none;
+            background: linear-gradient(180deg, rgba(126,231,135,.95), rgba(126,231,135,.65));
+            color: #04120a;
+            font-weight: 800;
+        }
+
+        #cancelLessonBtn,
+        #closeNewLessonModalBtn,
+        #closeNewInfoModalBtn,
+        #closeSubscriptionModalBtn,
+        #closeModalBtn {
+            background: linear-gradient(180deg, rgba(239,68,68,.18), rgba(239,68,68,.10));
+            border: none;
+            color: #b91c1c;
+            font-weight: 800;
+            border-radius: 12px;
         }
 
         ul {
             list-style: none;
             padding-left: 0;
             margin-top: 16px;
+            margin-bottom: 0;
         }
 
         li {
-            padding: 4px 0;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            margin-bottom: 10px;
         }
 
         a {
             cursor: pointer;
-            color: #0066cc;
+            color: var(--accent);
             text-decoration: none;
+            font-weight: 600;
         }
 
         a:hover {
@@ -98,20 +207,37 @@
         label {
             display: block;
             margin-top: 8px;
+            color: var(--muted);
+            font-size: 13px;
         }
 
         select {
             width: 100%;
-            padding: 6px;
+            padding: 10px 12px;
             margin-top: 4px;
             box-sizing: border-box;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            color: var(--text);
         }
 
         input, textarea {
             width: 100%;
-            padding: 6px;
+            padding: 10px 12px;
             box-sizing: border-box;
             margin-top: 4px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+            color: var(--text);
+            outline: none;
+            transition: .15s ease;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: rgba(110,168,254,.6);
+            box-shadow: 0 0 0 4px rgba(110,168,254,.12);
         }
 
         .modal {
@@ -125,11 +251,13 @@
         }
 
         .modal-content {
-            background: #fff;
+            background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,252,.96));
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 16px;
             width: 420px;
             max-width: 90%;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
         }
 
         #lessonInfoInput {
@@ -161,12 +289,53 @@
             gap: 12px;
             margin-top: 10px;
             padding: 10px 12px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
         }
 
         .subscription-text {
             flex: 1;
+        }
+
+        #myDetails,
+        #studentDetails,
+        #lessonDetails,
+        #paymentDetails,
+        #subscriptionDetails {
+            background: transparent;
+        }
+
+        #myDetails h3,
+        #studentDetails h3,
+        #lessonDetails h3,
+        #paymentDetails h3,
+        #subscriptionDetails h3 {
+            margin-top: 0;
+            margin-bottom: 14px;
+            font-size: 18px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 16px 0;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 16px;
+            }
+
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .left-panel,
+            .right-panel {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -187,6 +356,7 @@
 <button id="loadMyInfoBtn">My Details</button>
 <button id="loadStudentsBtn">Students</button>
 <button id="loadLessonsBtn">Lessons</button>
+<button id="loadSubscriptionsBtn">Subscriptions</button>
 <button id="loadPaymentBtn">Payments</button>
 <a href="calendar.html">
     <button>Calendar</button>
@@ -215,6 +385,9 @@
         </div>
         <div id="paymentTab" class="hidden">
             <ul id="balanceList"></ul>
+        </div>
+        <div id="subscriptionsTab" class="hidden">
+            <ul id="subscriptionsList"></ul>
         </div>
 
     </div>
@@ -371,6 +544,7 @@
             <button id="cancelLessonBtn">Cancel</button>
             <button id="saveChangesLessonBtn">Save Changes</button>
             <button id="toStudent">Student Info</button>
+            <button id="sendEmailInvitationBtn">Send Email Invitation</button>
         </div>
 
         <div id="paymentDetails" class="hidden">
@@ -397,17 +571,52 @@
             <button id="paidBtn">Paid</button>
         </div>
 
+        <div id="subscriptionDetails" class="hidden">
+            <h3>Subscription details</h3>
+            <input type="hidden" id="subscriptionId">
+            <label>Student Name:
+                <input type="text" id="subscriptionStudentName">
+            </label>
+            <label>Start date:
+                <input type="date" id="subscriptionStartDate" readonly>
+            </label>
+            <label>End date:
+                <input type="date" id="subscriptionEndDate">
+            </label>
+            <label>Remaining lessons:
+                <input type="number" id="subscriptionRemainingLessons" readonly>
+            </label>
+            <label>Status:
+                <select id="subscriptionStatus">
+                    <option value="UNPAID">UNPAID</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="EXPIRED">EXPIRED</option>
+                </select>
+            </label>
+            <label>Comment:
+                <textarea id="subscriptionComment" rows="4"></textarea>
+            </label>
+            <div>
+                <button id="deleteSubscriptionBtn">Delete subscription</button>
+                <button id="changeSubscriptionBtn">Change subscription</button>
+                <button id="paidSubscriptionBtn">Paid</button>
+            </div>
+            <h4>Lessons</h4>
+            <div id="subscriptionLessonsList"></div>
+        </div>
+
     </div>
 </div>
 
 <script>
-    const API_BASE = "http://localhost:8080/trainer"; // поменяйте если другой порт
+    const API_BASE = "/trainer";
 
     const loadMyInfoBtn =document.getElementById("loadMyInfoBtn");
     const myDetails = document.getElementById("myDetails");
     const refreshCalendarLinkBtn = document.getElementById("refreshCalendarLinkBtn");
     const getTelegramLinkBtn = document.getElementById("getTelegramLinkBtn");
     const loadLessonsBtn = document.getElementById("loadLessonsBtn");
+    const loadSubscriptionsBtn = document.getElementById("loadSubscriptionsBtn");
     const lessonsTab = document.getElementById("lessonsTab");
     const lessonDetails = document.getElementById("lessonDetails");
     const completeLessonBtn = document.getElementById("completeLessonBtn");
@@ -420,6 +629,8 @@
     const studentDetails = document.getElementById("studentDetails");
     const paymentTab = document.getElementById("paymentTab");
     const paymentDetails = document.getElementById("paymentDetails");
+    const subscriptionsTab = document.getElementById("subscriptionsTab");
+    const subscriptionDetails = document.getElementById("subscriptionDetails");
     const addNewLessonBtn = document.getElementById("addNewLessonBtn");
     const newLessonModal = document.getElementById("newLessonModal");
     const closeNewLessonModalBtn = document.getElementById("closeNewLessonModalBtn");
@@ -485,6 +696,8 @@
         paymentTab.classList.add("hidden");
         paymentDetails.classList.add("hidden");
         studentsTab.classList.add("hidden");
+        subscriptionsTab.classList.add("hidden");
+        subscriptionDetails.classList.add("hidden");
     });
 
     async function loadMyInfo() {
@@ -545,6 +758,8 @@
         studentDetails.classList.add("hidden");
        paymentTab.classList.add("hidden");
        paymentDetails.classList.add("hidden");
+        subscriptionsTab.classList.add("hidden");
+        subscriptionDetails.classList.add("hidden");
         myDetails.classList.add("hidden");
     });
     /*выведение на экран формы добавоения нового урока */
@@ -601,6 +816,7 @@
     /*выведение двух списков уроков по кновке Lessons*/
     loadLessonsBtn.addEventListener("click", loadLessonsCompleted);
     loadLessonsBtn.addEventListener("click", loadLessonsPlanned);
+    loadSubscriptionsBtn.addEventListener("click", loadTrainerSubscriptions);
     /*завершение урока по кнопке Completed*/
 
     completeLessonBtn.addEventListener("click", () => {
@@ -642,6 +858,7 @@
         hideNewLessonModal();
         hideNewInfoModal();
     });
+    document.getElementById("sendEmailInvitationBtn").addEventListener("click", sendEmailInvitation);
 
 
     /* Показать уроки — скрыть студентов и платежи*/
@@ -649,8 +866,10 @@
        lessonsTab.classList.remove("hidden");
         studentsTab.classList.add("hidden");
        paymentTab.classList.add("hidden");
+        subscriptionsTab.classList.add("hidden");
         studentDetails.classList.add("hidden");
         lessonDetails.classList.add("hidden");
+        subscriptionDetails.classList.add("hidden");
         hideCompleteLessonModal();
         paymentDetails.classList.add("hidden");
         hideNewLessonModal();
@@ -667,16 +886,37 @@
         studentsTab.classList.add("hidden");
         studentDetails.classList.add("hidden");
        lessonDetails.classList.add("hidden");
+        subscriptionDetails.classList.add("hidden");
         paymentDetails.classList.add("hidden");
         lessonsTab.classList.add("hidden");
+        subscriptionsTab.classList.add("hidden");
         hideNewLessonModal();
         hideNewInfoModal();
         hideNewSubscriptionModal();
         myDetails.classList.add("hidden");
     });
 
+    loadSubscriptionsBtn.addEventListener("click", () => {
+        subscriptionsTab.classList.remove("hidden");
+        subscriptionDetails.classList.add("hidden");
+        studentsTab.classList.add("hidden");
+        studentDetails.classList.add("hidden");
+        lessonsTab.classList.add("hidden");
+        lessonDetails.classList.add("hidden");
+        paymentTab.classList.add("hidden");
+        paymentDetails.classList.add("hidden");
+        hideNewLessonModal();
+        hideNewInfoModal();
+        hideNewSubscriptionModal();
+        hideCompleteLessonModal();
+        myDetails.classList.add("hidden");
+    });
+
     document.getElementById("sendBillBtn").addEventListener("click", sendBill);
     document.getElementById("paidBtn").addEventListener("click", addPayment);
+    document.getElementById("deleteSubscriptionBtn").addEventListener("click", deleteSubscription);
+    document.getElementById("changeSubscriptionBtn").addEventListener("click", changeSubscription);
+    document.getElementById("paidSubscriptionBtn").addEventListener("click", markSubscriptionPaid);
 
     const newStudentBtn = document.getElementById("newStudentBtn");
     const form = document.getElementById("newStudentForm");
@@ -759,6 +999,229 @@
         } catch (error) {
             console.error(error);
             list.innerHTML = "<li>Error loading students</li>";
+        }
+    }
+
+    function renderTrainerSubscriptions(subscriptions) {
+        const list = document.getElementById("subscriptionsList");
+        list.innerHTML = "";
+
+        if (!subscriptions || subscriptions.length === 0) {
+            list.innerHTML = "<li>No subscriptions found</li>";
+            return;
+        }
+
+        subscriptions.forEach(subscription => {
+            const li = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = "#";
+            link.textContent = subscription.info ?? "Subscription";
+            link.addEventListener("click", (e) => {
+                e.preventDefault();
+                loadTrainerSubscriptionDetails(subscription.id);
+            });
+            li.appendChild(link);
+            list.appendChild(li);
+        });
+    }
+
+    async function loadTrainerSubscriptions() {
+        const list = document.getElementById("subscriptionsList");
+        list.innerHTML = "<li>Loading...</li>";
+
+        try {
+            const response = await fetch(API_BASE + "/subscriptions", {
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                list.innerHTML = "<li>Error loading subscriptions</li>";
+                return;
+            }
+
+            const subscriptions = await response.json();
+            renderTrainerSubscriptions(subscriptions);
+        } catch (error) {
+            console.error("Error loading subscriptions:", error);
+            list.innerHTML = "<li>Error loading subscriptions</li>";
+        }
+    }
+
+    function renderSubscriptionLessons(subscriptionId, lessons) {
+        const container = document.getElementById("subscriptionLessonsList");
+        container.innerHTML = "";
+
+        if (!lessons || lessons.length === 0) {
+            container.textContent = "No lessons linked";
+            return;
+        }
+
+        lessons.forEach(lesson => {
+            const row = document.createElement("div");
+            row.className = "subscription-row";
+
+            const text = document.createElement("div");
+            text.className = "subscription-text";
+            text.textContent = `${lesson.startTime ?? ""} ${lesson.studentName ?? ""} (${lesson.id ?? ""})`.trim();
+
+            const removeBtn = document.createElement("button");
+            removeBtn.type = "button";
+            removeBtn.textContent = "Remove";
+            removeBtn.addEventListener("click", () => removeLessonFromSubscription(subscriptionId, lesson.id));
+
+            row.appendChild(text);
+            row.appendChild(removeBtn);
+            container.appendChild(row);
+        });
+    }
+
+    async function loadTrainerSubscriptionDetails(subscriptionId) {
+        try {
+            const response = await fetch(API_BASE + "/subscription/" + subscriptionId, {
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                alert("Failed to load subscription");
+                return;
+            }
+
+            const subscription = await response.json();
+            document.getElementById("subscriptionId").value = subscription.id ?? "";
+            document.getElementById("subscriptionStudentName").value = subscription.studentName ?? "";
+            document.getElementById("subscriptionStartDate").value = subscription.startDate ?? "";
+            document.getElementById("subscriptionEndDate").value = subscription.endDate ?? "";
+            document.getElementById("subscriptionRemainingLessons").value = subscription.remainingLessons ?? 0;
+            document.getElementById("subscriptionStatus").value = subscription.status ?? "UNPAID";
+            document.getElementById("subscriptionComment").value = subscription.comment ?? "";
+            renderSubscriptionLessons(subscription.id, subscription.lessons ?? []);
+            subscriptionDetails.classList.remove("hidden");
+        } catch (error) {
+            console.error("Error loading subscription details:", error);
+            alert("Failed to load subscription");
+        }
+    }
+
+    async function removeLessonFromSubscription(subscriptionId, lessonId) {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+
+        try {
+            const response = await fetch(API_BASE + "/subscription/" + subscriptionId + "/lesson/" + lessonId + "/remove", {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {
+                    "X-XSRF-TOKEN": csrf
+                }
+            });
+
+            if (!response.ok) {
+                alert("Failed to remove lesson from subscription");
+                return;
+            }
+
+            await loadTrainerSubscriptionDetails(subscriptionId);
+        } catch (error) {
+            console.error("Error removing lesson from subscription:", error);
+            alert("Failed to remove lesson from subscription");
+        }
+    }
+
+    async function deleteSubscription() {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+        const subscriptionId = document.getElementById("subscriptionId").value;
+
+        if (!subscriptionId) {
+            alert("Select a subscription first");
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + "/subscription/" + subscriptionId, {
+                method: "DELETE",
+                credentials: "same-origin",
+                headers: {
+                    "X-XSRF-TOKEN": csrf
+                }
+            });
+
+            if (!response.ok) {
+                alert("Failed to delete subscription");
+                return;
+            }
+
+            subscriptionDetails.classList.add("hidden");
+            await loadTrainerSubscriptions();
+        } catch (error) {
+            console.error("Error deleting subscription:", error);
+            alert("Failed to delete subscription");
+        }
+    }
+
+    async function changeSubscription() {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+        const subscriptionId = document.getElementById("subscriptionId").value;
+
+        if (!subscriptionId) {
+            alert("Select a subscription first");
+            return;
+        }
+
+        const body = {
+            endDate: document.getElementById("subscriptionEndDate").value || null,
+            status: document.getElementById("subscriptionStatus").value || null,
+            comment: document.getElementById("subscriptionComment").value ?? ""
+        };
+
+        try {
+            const response = await fetch(API_BASE + "/subscription/" + subscriptionId + "/change", {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrf
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                alert("Failed to change subscription");
+                return;
+            }
+
+            await loadTrainerSubscriptionDetails(subscriptionId);
+        } catch (error) {
+            console.error("Error changing subscription:", error);
+            alert("Failed to change subscription");
+        }
+    }
+
+    async function markSubscriptionPaid() {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+        const subscriptionId = document.getElementById("subscriptionId").value;
+
+        if (!subscriptionId) {
+            alert("Select a subscription first");
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + "/subscription/" + subscriptionId + "/paid", {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {
+                    "X-XSRF-TOKEN": csrf
+                }
+            });
+
+            if (!response.ok) {
+                alert("Failed to mark subscription as paid");
+                return;
+            }
+
+            await loadTrainerSubscriptionDetails(subscriptionId);
+        } catch (error) {
+            console.error("Error marking subscription as paid:", error);
+            alert("Failed to mark subscription as paid");
         }
     }
 
@@ -889,8 +1352,8 @@
                 durationMonths: durationMonths
             };
 
-            const response = await fetch(API_BASE + "/new_subscription_type", {
-                method: "PUT",
+            const response = await fetch(API_BASE + "/subscription_type/new", {
+                method: "POST",
                 credentials: "same-origin",
                 headers: {
                     "Content-Type": "application/json",
@@ -1489,6 +1952,31 @@ let currentStudentId = null;
     } catch (error) {
         console.error("Error:", error);
         alert("An error occurred while updating the student data.");
+    }
+}
+
+    async function sendEmailInvitation() {
+    const id = document.getElementById("lessonId").value;
+    if (!id) {
+        alert("Сначала выберите урок");
+        return;
+    }
+    try {
+        const response = await fetch(API_BASE + "/lesson/" + id + "/send_invitation", {
+            method: "GET",
+            credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+            console.error("Error:", response.status, response.statusText);
+            alert("Не удалось отправить приглашение");
+            return;
+        }
+
+        alert("Приглашение отправлено");
+    } catch (error) {
+        console.error("Error sending invitation:", error);
+        alert("Ошибка при отправке приглашения");
     }
 }
 

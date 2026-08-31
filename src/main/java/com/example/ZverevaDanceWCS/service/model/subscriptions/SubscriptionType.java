@@ -22,6 +22,9 @@ public class SubscriptionType {
     @Column (name = "trainer_id", nullable = false)
     Long trainerId;
 
+    @Column (name = "trainer_name", nullable = false)
+    String trainerName;
+
     @Column (name ="duration_months", nullable = false)
     int durationMonths;
 
@@ -34,8 +37,11 @@ public class SubscriptionType {
     @Column (name = "active", nullable = false)
     Boolean active;
 
+    @Column (name = "comment", nullable = false)
+    String comment;
+
     @Override
     public String toString() {
-        return amountLessons+" - "+this.price +" EUR (valid for "+this.durationMonths+" months)";
+        return amountLessons+" lessons for "+this.price +" EUR (valid for "+this.durationMonths+" months)";
     }
 }

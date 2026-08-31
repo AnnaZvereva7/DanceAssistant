@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.subscriptions;
+package com.example.ZverevaDanceWCS.service.model.subscriptions.dto;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

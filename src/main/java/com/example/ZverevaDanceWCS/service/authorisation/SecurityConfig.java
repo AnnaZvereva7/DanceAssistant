@@ -37,7 +37,7 @@ public class SecurityConfig {
                 .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         // публичные ресурсы
-                        .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/images/**", "/guest.html").permitAll()
+                        .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/images/**", "/guest.html", "/privacy-policy.html").permitAll()
 
                         // OAuth endpoints
                         .requestMatchers("/oauth2/**", "/login/oauth2/**", "/auth/login/google").permitAll()

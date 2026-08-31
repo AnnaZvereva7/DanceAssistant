@@ -151,6 +151,22 @@
             line-height:1.45;
         }
 
+        .footer-link{
+            margin-top:16px;
+            text-align:center;
+        }
+
+        .footer-link a{
+            color:var(--accent);
+            text-decoration:none;
+            font-size:14px;
+            font-weight:600;
+        }
+
+        .footer-link a:hover{
+            text-decoration:underline;
+        }
+
         @media (max-width: 840px){
             body{ padding:16px; }
             .page{ grid-template-columns:1fr; gap:14px; }
@@ -185,6 +201,10 @@
 
         <div class="note">
             Guest mode lets you open the public booking page without signing in.
+        </div>
+
+        <div class="footer-link">
+            <a href="/privacy-policy.html">Privacy Policy</a>
         </div>
     </main>
 </div>
