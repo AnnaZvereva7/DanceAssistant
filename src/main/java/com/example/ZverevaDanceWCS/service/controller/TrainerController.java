@@ -10,6 +10,10 @@ import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDT
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUpdateDto;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.StudentSubscription;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.*;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionTypeService;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
@@ -32,6 +36,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.service.annotation.PutExchange;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -53,9 +58,11 @@ public class TrainerController {
     final CalendarEventService calendarEventService;
     final TrainerStudentService trainerStudentService;
     final TelegramEnterCodeService telegramEnterCodeService;
+    final SubscriptionTypeService subscriptionTypeService;
+    final SubscriptionService subscriptionService;
 
 
-    public TrainerController(UserService userService, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService, TelegramEnterCodeService telegramEnterCodeService) {
+    public TrainerController(UserService userService, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService, TelegramEnterCodeService telegramEnterCodeService, SubscriptionTypeService subscriptionTypeService, SubscriptionService subscriptionService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
@@ -65,6 +72,8 @@ public class TrainerController {
         this.calendarEventService = calendarEventService;
         this.trainerStudentService = trainerStudentService;
         this.telegramEnterCodeService = telegramEnterCodeService;
+        this.subscriptionTypeService = subscriptionTypeService;
+        this.subscriptionService = subscriptionService;
     }
 
     @PostMapping("new_user/{name}")
@@ -294,6 +303,84 @@ public class TrainerController {
         String response= telegramEnterCodeService.createNewLink(trainer.getId());
         log.info(response);
         return Map.of("link", response);
+    }
+
+    @GetMapping("/subscription_types")
+    public List<SubscriptionTypeStringDTO> getSubscriptionTypes(HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        return subscriptionTypeService.getSubscriptionTypesByTrainer(trainer.getId())
+                .stream()
+                .map(SubscriptionTypeStringDTO::new)
+                .toList();
+    }
+
+    @PostMapping("/subscription_type/new")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addNewSubscriptionType(@Valid @RequestBody SubscriptionTypeNewDTO subscriptionTypeNewDTO, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        subscriptionTypeService.saveNewSubscriptionType(subscriptionTypeNewDTO, trainer);
+    }
+
+    @PutMapping("/subscription_type/{id}/unactive")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSubscriptionType(@PathVariable Long id, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        subscriptionTypeService.deleteSubscriptionType(id, trainer);
+    }
+
+    @GetMapping("/lesson/{id}/send_invitation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void sendLessonInvitation(@PathVariable Long id, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        Lesson lesson = lessonService.findById(id);
+        if (!lesson.getTrainer().getId().equals(trainer.getId())) {
+            throw new RuntimeException("Lesson id=" + id + " does not belong to trainer " + trainer.getName());
+        }
+        try {
+            lessonService.sendLessonInvitationalEmail(lesson);
+        } catch (RuntimeException e) {
+            log.error("Failed to send lesson invitation for lesson id=" + id + " by trainer " + trainer.getName() + ": " + e.getMessage());
+            throw new RuntimeException("Failed to send lesson invitation: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/subscriptions")
+    public List<StudentSubscriptionDTO> getSubscriptionByTrainer(HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        List<StudentSubscription> subscriptions = subscriptionService.getSubscriptionByTrainerId(trainer.getId());
+        return subscriptions.stream().map(subscription -> new StudentSubscriptionDTO(subscription, trainer.getRole())).toList();
+    }
+
+    @GetMapping("/subscription/{id}")
+    public StudentSubscriptionFullDTO getSubscriptionById(@PathVariable Long id, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        return lessonService.getStudentSubscriptionFullDTO(id, trainer.getId());
+    }
+
+    @PutMapping("/subscription/{id}/lesson/{lessonId}/remove")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeLessonFromSubscription(@PathVariable Long id, @PathVariable Long lessonId, HttpSession session) {
+ //todo (удалить линку и вернуть +1 оставшихся уроков, если экспайред, то вернуть актив)
+    }
+
+    @DeleteMapping("/subscription/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSubscription(@PathVariable Long id, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        subscriptionService.deleteSubscription(id, trainer.getId());
+    }
+
+    @PutMapping("/subscription/{id}/change")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changeSubscription(@PathVariable Long id, @RequestBody ChangeSubscriptionDTO changeDto, HttpSession session) {
+//todo
+    }
+
+    @PutMapping("/subscription/{id}/paid")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void markSubscriptionAsPaid(@PathVariable Long id, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        paymentService.markSubscriptionPaid(id, trainer.getId());
     }
 
 }

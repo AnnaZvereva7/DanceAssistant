@@ -111,3 +111,33 @@
         ON DELETE CASCADE
     );
 
+    create table if not exists subscription_types (
+        subscription_type_id SERIAL PRIMARY KEY,
+        trainer_id BIGINT NOT NULL REFERENCES users(user_id),
+        trainer_name VARCHAR(255) NOT NULL,
+        duration_months INT NOT NULL,
+        amount_lessons INT NOT NULL,
+        price INT NOT NULL,
+        active BOOLEAN NOT NULL,
+        comment VARCHAR(255) NOT NULL
+    );
+
+    create table if not exists students_subscriptions (
+        student_subscription_id SERIAL PRIMARY KEY,
+        subscription_type_id BIGINT REFERENCES subscription_types(subscription_type_id),
+        student_id BIGINT NOT NULL REFERENCES users(user_id),
+        student_name VARCHAR(255) NOT NULL,
+        trainer_name VARCHAR(255) NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        remaining_lessons INT NOT NULL,
+        created_at TIMESTAMP NOT NULL,
+        status VARCHAR(50) NOT NULL,
+        comment VARCHAR(255)
+    );
+
+    create table if not exists lesson_subscription_links (
+        lesson_subscription_link_id SERIAL PRIMARY KEY,
+        lesson_id BIGINT REFERENCES lessons(lesson_id) ON DELETE CASCADE,
+        subscription_id BIGINT REFERENCES students_subscriptions(student_subscription_id) ON DELETE CASCADE
+    );

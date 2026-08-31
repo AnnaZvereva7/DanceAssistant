@@ -3,17 +3,22 @@ package com.example.ZverevaDanceWCS.service.controller;
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
-import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDTO;
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUserDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
 import com.example.ZverevaDanceWCS.service.model.payments.TransactionDataDao;
-import com.example.ZverevaDanceWCS.service.model.user.User;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionTypeService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.StudentSubscriptionDTO;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.StudentSubscriptionNewDTO;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.SubscriptionTypeStringDTO;
+import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
 import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
+import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import com.example.ZverevaDanceWCS.service.telegramBot.TelegramEnterCode.TelegramEnterCodeService;
 import jakarta.validation.Valid;
@@ -41,13 +46,22 @@ public class UserController {
     final PaymentService paymentService;
     final ScheduleService scheduleService;
     final TelegramEnterCodeService telegramEnterCodeService;
+    final TrainerStudentService trainerStudentService;
+    final SubscriptionService subscriptionService;
+    final SubscriptionTypeService subscriptionTypeService;
 
-    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService, ScheduleService scheduleService, TelegramEnterCodeService telegramEnterCodeService) {
+    public UserController(LessonService lessonService, UserService userService, PaymentService paymentService,
+                          ScheduleService scheduleService, TelegramEnterCodeService telegramEnterCodeService,
+                          TrainerStudentService trainerStudentService, SubscriptionService subscriptionService,
+                          SubscriptionTypeService subscriptionTypeService) {
         this.lessonService = lessonService;
         this.userService = userService;
         this.paymentService = paymentService;
         this.scheduleService = scheduleService;
         this.telegramEnterCodeService = telegramEnterCodeService;
+        this.trainerStudentService = trainerStudentService;
+        this.subscriptionService = subscriptionService;
+        this.subscriptionTypeService = subscriptionTypeService;
     }
 
     @PostMapping("/confirm_lesson/{lessonId}")
@@ -144,6 +158,47 @@ public class UserController {
         String response= telegramEnterCodeService.createNewLink(userId);
         log.info(response);
         return Map.of("link", response);
+    }
+
+    @GetMapping("/trainers")
+    public List<UserShortDTO> getStudentTrainers(HttpSession session) {
+        Long userId = (Long) session.getAttribute("USER_ID");
+        return trainerStudentService.getAllTrainersByStudent(userId)
+                .stream()
+                .map(UserShortDTO::toShortDTO)
+                .toList();
+    }
+
+    @GetMapping("/subscriptions")
+    public List<StudentSubscriptionDTO> getStudentSubscriptions(HttpSession session) {
+        Long userId = (Long) session.getAttribute("USER_ID");
+        return subscriptionService.getSubscriptionsByStudentId(userId)
+                .stream()
+                .map(subscription -> new StudentSubscriptionDTO(subscription, userService.findById(userId).getRole()))
+                .toList();
+    }
+
+    @GetMapping("/trainer/{trainerId}/subscription_types")
+    public List<SubscriptionTypeStringDTO> getTrainerSubscriptionTypes(@PathVariable Long trainerId) {
+        return subscriptionTypeService.getSubscriptionTypesByTrainer(trainerId)
+                .stream()
+                .map(SubscriptionTypeStringDTO::new)
+                .toList();
+    }
+
+    @PostMapping("/subscription/new")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addNewSubscription(@RequestBody StudentSubscriptionNewDTO dto, HttpSession session) {
+        Long userId = (Long) session.getAttribute("USER_ID");
+        lessonService.addNewSubscription(dto, userId);
+    }
+
+    @GetMapping("/subscription/{subscriptionId}")
+    public List<LessonUserDTO> getSubscription(@PathVariable Long subscriptionId) {
+        List<Lesson> lessons = subscriptionService.getLessonsBySubscriptionId(subscriptionId);
+        return lessons.stream()
+                .map(LessonUserDTO::new)
+                .toList();
     }
 
 }

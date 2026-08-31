@@ -38,7 +38,9 @@ public class CalendarController {
  final TelegramBot telegramBot;
  final CalendarLinkService calendarLinkService;
 
-    public CalendarController(FreeSlotService slotService, CalendarEventService calendarEventService, UserService userService, LessonService lessonService, TrainerStudentService trainerStudentService, TelegramBot telegramBot, CalendarLinkService calendarLinkService) {
+    public CalendarController(FreeSlotService slotService, CalendarEventService calendarEventService,
+                              UserService userService, LessonService lessonService, TrainerStudentService trainerStudentService,
+                              TelegramBot telegramBot, CalendarLinkService calendarLinkService) {
         this.slotService = slotService;
         this.calendarEventService = calendarEventService;
         this.userService = userService;

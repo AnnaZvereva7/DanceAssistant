@@ -267,6 +267,55 @@
           flex-shrink:0;
         }
 
+        .subscription-list{
+          display:flex;
+          flex-direction:column;
+          gap:10px;
+          margin-top:12px;
+        }
+
+        .subscription-item{
+          padding:12px;
+          border:1px solid var(--border);
+          border-radius:12px;
+          background:#fff;
+        }
+
+        .subscription-detail-card{
+          margin-top:16px;
+          padding:16px;
+          border:1px solid var(--border);
+          border-radius:12px;
+          background:var(--card2);
+        }
+
+        .subscription-lessons{
+          margin-top:10px;
+          padding-left:18px;
+        }
+
+        .modal{
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.45);
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          z-index:1000;
+        }
+
+        .modal.hidden{
+          display:none;
+        }
+
+        .modal-content{
+          background:#fff;
+          padding:20px;
+          border-radius:12px;
+          width:420px;
+          max-width:90%;
+        }
+
         /* Small helper */
         .muted{ color: var(--muted); }
     </style>
@@ -291,7 +340,7 @@
     <div class="tabs">
         <button id="loadScheduleBtn" class="tab-btn">Schedule</button>
         <button id="loadUserInfoBtn" class="tab-btn">MyInfo</button>
-        <button id="loadPaymentBtn" class="tab-btn">Payments</button>
+        <button id="loadPaymentBtn" class="tab-btn">Payments and subscriptions</button>
         <button id="loadCalendar" class="tab-btn">Calendar</button>
         <button id="musicServiceBtn" class="tab-btn">Music</button>
     </div>
@@ -373,6 +422,20 @@
             </div>
 
             <div id="monthDetails"></div>
+
+            <div style="margin-top:24px;">
+                <h3>My subscriptions</h3>
+                <div class="actions">
+                    <button id="addNewSubscriptionBtn" class="primary-btn">Add new</button>
+                </div>
+                <div id="subscriptionsList" class="subscription-list"></div>
+                <div id="subscriptionFullInfo" class="subscription-detail-card" style="display:none;">
+                    <div class="actions" style="justify-content:flex-end; margin-top:0;">
+                        <button id="closeSubscriptionFullInfoBtn" class="secondary-btn">Close</button>
+                    </div>
+                    <div id="subscriptionFullInfoContent"></div>
+                </div>
+            </div>
         </div>
 
         <div id="musicTab" class="tab">
@@ -381,6 +444,27 @@
         </div>
     </div>
 
+</div>
+<div id="newSubscriptionModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Add new subscription</h3>
+        <label>Trainer:
+            <select id="subscriptionTrainerSelect"></select>
+        </label>
+        <div class="actions">
+            <button id="subscriptionTrainerNextBtn" class="primary-btn">Next</button>
+            <button id="closeSubscriptionModalBtn" class="secondary-btn">Cancel</button>
+        </div>
+        <label id="subscriptionTypeBlock" style="display:none; margin-top:16px;">Subscription type:
+            <select id="subscriptionTypeSelect"></select>
+        </label>
+        <label id="subscriptionStartDateBlock" style="display:none; margin-top:16px;">Start date:
+            <input type="date" id="subscriptionStartDate">
+        </label>
+        <div id="subscriptionTypeActions" class="actions" style="display:none;">
+            <button id="createSubscriptionBtn" class="primary-btn">Create</button>
+        </div>
+    </div>
 </div>
 <script>
     const API_BASE = "/user";
@@ -427,7 +511,8 @@
 
     buttons.payments.addEventListener("click", async () => {
       showTab("payments");
-      await loadPaymentDetails?.(); // если у тебя есть функция
+      await loadPaymentDetails?.();
+      await loadSubscriptions();
     });
 
     buttons.music.addEventListener("click", async () => {
@@ -442,6 +527,11 @@
     document.getElementById("newLessonBtn").addEventListener("click", addNewLesson);
     document.getElementById("getTelegramLinkStudentBtn").addEventListener("click", getTelegramLinkStudent);
     document.getElementById("saveChangesStudentBtn").addEventListener("click", saveChangesStudent);
+    document.getElementById("addNewSubscriptionBtn").addEventListener("click", openNewSubscriptionModal);
+    document.getElementById("closeSubscriptionModalBtn").addEventListener("click", closeNewSubscriptionModal);
+    document.getElementById("subscriptionTrainerNextBtn").addEventListener("click", loadTrainerSubscriptionTypes);
+    document.getElementById("createSubscriptionBtn").addEventListener("click", createStudentSubscription);
+    document.getElementById("closeSubscriptionFullInfoBtn").addEventListener("click", closeSubscriptionFullInfo);
 
     document.getElementById("loadLessonsPaymentBtn").addEventListener("click", async () => {
       await loadMonthLessonsPaymentDetails?.(); // если у тебя есть функция
@@ -667,6 +757,224 @@
     alert("Error loading payment details");
   }
 }
+
+    function openNewSubscriptionModal() {
+      document.getElementById("subscriptionTrainerSelect").innerHTML = "";
+      document.getElementById("subscriptionTypeSelect").innerHTML = "";
+      document.getElementById("subscriptionTypeBlock").style.display = "none";
+      document.getElementById("subscriptionStartDateBlock").style.display = "none";
+      document.getElementById("subscriptionTypeActions").style.display = "none";
+      document.getElementById("subscriptionStartDate").value = todayIsoDate();
+      document.getElementById("newSubscriptionModal").classList.remove("hidden");
+      loadStudentTrainers();
+    }
+
+    function closeNewSubscriptionModal() {
+      document.getElementById("newSubscriptionModal").classList.add("hidden");
+    }
+
+    function closeSubscriptionFullInfo() {
+      document.getElementById("subscriptionFullInfo").style.display = "none";
+      document.getElementById("subscriptionFullInfoContent").innerHTML = "";
+    }
+
+    function getSubscriptionTypeId(item) {
+      return item.SubscriptionTypeId ?? item.subscriptionTypeId ?? item.id ?? null;
+    }
+
+    function getSubscriptionTypeText(item) {
+      return item.SubscriptionTypeString ?? item.subscriptionTypeString ?? item.info ?? "";
+    }
+
+    function todayIsoDate() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    async function loadStudentTrainers() {
+      const select = document.getElementById("subscriptionTrainerSelect");
+      select.innerHTML = "<option value=\"\">Choose trainer</option>";
+
+      try {
+        const response = await fetch(API_BASE +"/trainers", {
+          credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load trainers");
+        }
+
+        const trainers = await response.json();
+        (trainers ?? []).forEach(trainer => {
+          const option = document.createElement("option");
+          option.value = trainer.id;
+          option.textContent = trainer.name;
+          select.appendChild(option);
+        });
+      } catch (error) {
+        console.error("Error loading trainers:", error);
+        alert("Failed to load trainers");
+      }
+    }
+
+    async function loadTrainerSubscriptionTypes() {
+      const trainerId = document.getElementById("subscriptionTrainerSelect").value;
+      const select = document.getElementById("subscriptionTypeSelect");
+
+      if (!trainerId) {
+        alert("Choose trainer");
+        return;
+      }
+
+      select.innerHTML = "<option value=\"\">Choose subscription type</option>";
+
+      try {
+        const response = await fetch(API_BASE+"/trainer/" + trainerId + "/subscription_types", {
+          credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load subscription types");
+        }
+
+        const subscriptionTypes = await response.json();
+        (subscriptionTypes ?? []).forEach(item => {
+          const option = document.createElement("option");
+          option.value = getSubscriptionTypeId(item);
+          option.textContent = getSubscriptionTypeText(item);
+          select.appendChild(option);
+        });
+
+        document.getElementById("subscriptionTypeBlock").style.display = "flex";
+        document.getElementById("subscriptionStartDateBlock").style.display = "flex";
+        document.getElementById("subscriptionTypeActions").style.display = "flex";
+      } catch (error) {
+        console.error("Error loading trainer subscription types:", error);
+        alert("Failed to load subscription types");
+      }
+    }
+
+    async function createStudentSubscription() {
+      const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+      const subscriptionTypeId = document.getElementById("subscriptionTypeSelect").value;
+      const startDate = document.getElementById("subscriptionStartDate").value;
+
+      if (!subscriptionTypeId) {
+        alert("Choose subscription type");
+        return;
+      }
+
+      if (!startDate) {
+        alert("Choose start date");
+        return;
+      }
+
+      try {
+        const body = {
+          subscriptionTypeId: Number(subscriptionTypeId),
+          startDate: startDate
+        };
+
+        const response = await fetch(API_BASE+"/subscription/new", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-XSRF-TOKEN": csrf
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to create subscription");
+        }
+
+        closeNewSubscriptionModal();
+        alert("The subscription has been created. Please wait for payment instructions. Please book your lesson times in advance.");
+        await loadSubscriptions();
+      } catch (error) {
+        console.error("Error creating subscription:", error);
+        alert("Failed to create subscription");
+      }
+    }
+
+    function renderSubscriptions(subscriptions) {
+      const container = document.getElementById("subscriptionsList");
+      container.innerHTML = "";
+
+      if (!subscriptions || subscriptions.length === 0) {
+        return;
+      }
+
+      subscriptions.forEach(subscription => {
+        const item = document.createElement("div");
+        item.className = "subscription-item";
+
+        const link = document.createElement("a");
+        link.href = "#";
+        link.textContent = subscription.info ?? "Subscription";
+        link.addEventListener("click", async (event) => {
+          event.preventDefault();
+          await loadSubscriptionFullInfo(subscription.id);
+        });
+
+        item.appendChild(link);
+        container.appendChild(item);
+      });
+    }
+
+    async function loadSubscriptions() {
+      const container = document.getElementById("subscriptionsList");
+      container.innerHTML = "";
+      closeSubscriptionFullInfo();
+
+      try {
+        const response = await fetch(API_BASE+"/subscriptions", {
+          credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load subscriptions");
+        }
+
+        const subscriptions = await response.json();
+        renderSubscriptions(subscriptions);
+      } catch (error) {
+        console.error("Error loading subscriptions:", error);
+      }
+    }
+
+    async function loadSubscriptionFullInfo(subscriptionId) {
+      try {
+        const response = await fetch(API_BASE+"/subscription/" + subscriptionId, {
+          credentials: "same-origin"
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load subscription");
+        }
+
+        const lessons = await response.json();
+        const content = document.getElementById("subscriptionFullInfoContent");
+        content.innerHTML = `<div style="margin-top:10px;"><strong>Lessons:</strong></div>`;
+
+        const lessonList = document.createElement("ul");
+        lessonList.className = "subscription-lessons";
+        (lessons ?? []).forEach(lesson => {
+          const li = document.createElement("li");
+          li.textContent = `${lesson.dateTime ?? ""} ${lesson.status ?? ""}`.trim();
+          lessonList.appendChild(li);
+        });
+        content.appendChild(lessonList);
+        document.getElementById("subscriptionFullInfo").style.display = "block";
+      } catch (error) {
+        console.error("Error loading subscription full info:", error);
+        alert("Failed to load subscription");
+      }
+    }
 
 // ---------- Payment: month details ----------
     async function loadMonthLessonsPaymentDetails() {
