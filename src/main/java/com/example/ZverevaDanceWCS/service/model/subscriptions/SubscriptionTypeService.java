@@ -2,12 +2,10 @@ package com.example.ZverevaDanceWCS.service.model.subscriptions;
 
 import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.SubscriptionTypeNewDTO;
-import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.SubscriptionTypeStringDTO;
 import com.example.ZverevaDanceWCS.service.model.user.User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class SubscriptionTypeService {
@@ -31,7 +29,6 @@ public class SubscriptionTypeService {
         subscriptionType.setAmountLessons(subscriptionTypeNewDTO.getAmountLessons());
         subscriptionType.setPrice(subscriptionTypeNewDTO.getPrice());
         subscriptionType.setActive(true);
-        subscriptionType.setComment("Created at " + java.time.LocalDateTime.now().format(Constant.formatterJustDate));
         subscriptionTypeRepository.save(subscriptionType);
     }
 
@@ -42,12 +39,22 @@ public class SubscriptionTypeService {
             throw new IllegalArgumentException("You are not authorized to delete this subscription type");
         }
         subscriptionType.setActive(false);
-        subscriptionType.setComment(subscriptionType.getComment() + " Deactivated at " + java.time.LocalDateTime.now().format(Constant.formatterJustDate));
+        subscriptionType.setInfo(subscriptionType.getInfo() + " Deactivated at " + java.time.LocalDateTime.now().format(Constant.formatterJustDate));
         subscriptionTypeRepository.save(subscriptionType);
     }
 
     public SubscriptionType findById(Long subscriptionTypeId) {
         return subscriptionTypeRepository.findById(subscriptionTypeId)
                 .orElseThrow(() -> new IllegalArgumentException("Subscription type not found"));
+    }
+
+    public void changeSubscriptionTypeInfo(Long id, String updatedInfo, Long trainerId) {
+        SubscriptionType subscriptionType = subscriptionTypeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Subscription type not found"));
+        if (!subscriptionType.getTrainerId().equals(trainerId)) {
+            throw new IllegalArgumentException("You are not authorized to change this subscription type");
+        }
+        subscriptionType.setInfo(updatedInfo);
+        subscriptionTypeRepository.save(subscriptionType);
     }
 }

@@ -2,7 +2,6 @@ package com.example.ZverevaDanceWCS.service.model.user.userDTO;
 
 import com.example.ZverevaDanceWCS.service.model.user.Messenger;
 import com.example.ZverevaDanceWCS.service.model.user.UserRole;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -26,6 +25,4 @@ public class UserUpdateByTrainerDto {
     String email;
     UserRole role;
     Messenger messenger;
-
-    List<ScheduleShortDTO> scheduleDTOs;
 }

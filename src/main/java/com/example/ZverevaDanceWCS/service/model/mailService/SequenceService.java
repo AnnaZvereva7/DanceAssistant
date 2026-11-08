@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.mailCalendarEvent;
+package com.example.ZverevaDanceWCS.service.model.mailService;
 
 import org.springframework.stereotype.Service;
 

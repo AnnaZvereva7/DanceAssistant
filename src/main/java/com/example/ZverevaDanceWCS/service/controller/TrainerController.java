@@ -12,12 +12,10 @@ import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.StudentSubscription;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionStatus;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.*;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionTypeService;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoService;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.NewInfoDTO;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.StudentInfo;
@@ -34,9 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.service.annotation.PutExchange;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -54,7 +50,6 @@ public class TrainerController {
     final TelegramBot bot;
     final PaymentService paymentService;
     final InfoService infoService;
-    final ScheduleService scheduleService;
     final CalendarEventService calendarEventService;
     final TrainerStudentService trainerStudentService;
     final TelegramEnterCodeService telegramEnterCodeService;
@@ -62,13 +57,15 @@ public class TrainerController {
     final SubscriptionService subscriptionService;
 
 
-    public TrainerController(UserService userService, LessonService lessonService, TelegramBot bot, PaymentService paymentService, InfoService infoService, ScheduleService scheduleService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService, TelegramEnterCodeService telegramEnterCodeService, SubscriptionTypeService subscriptionTypeService, SubscriptionService subscriptionService) {
+    public TrainerController(UserService userService, LessonService lessonService, TelegramBot bot, PaymentService paymentService,
+                             InfoService infoService, CalendarEventService calendarEventService, TrainerStudentService trainerStudentService,
+                             TelegramEnterCodeService telegramEnterCodeService, SubscriptionTypeService subscriptionTypeService,
+                             SubscriptionService subscriptionService) {
         this.userService = userService;
         this.lessonService = lessonService;
         this.bot = bot;
         this.paymentService = paymentService;
         this.infoService = infoService;
-        this.scheduleService = scheduleService;
         this.calendarEventService = calendarEventService;
         this.trainerStudentService = trainerStudentService;
         this.telegramEnterCodeService = telegramEnterCodeService;
@@ -92,20 +89,11 @@ public class TrainerController {
     @GetMapping("/user/{id}")
     public UserFullDTO getUserById(@PathVariable Long id, HttpSession session) { //todo check if it's trainer's student
         User trainer = findTrainerFromSession(session);
-        List<Schedule> schedules = scheduleService.findAllByStudentIdAndTrainerId(id, trainer.getId());
-        return UserFullDTO.toFullDTO(userService.findByIdWithInfo(id), schedules);
+        return UserFullDTO.toFullDTO(userService.findByIdWithInfo(id));
     }
-
-    @GetMapping("/user/{userId}/schedules")
-    public List<ScheduleShortDTO> getStudentSchedules(@PathVariable Long userId, HttpSession session) {
-        User trainer = findTrainerFromSession(session);
-        List<Schedule> schedules = scheduleService.findAllByStudentIdAndTrainerId(userId, trainer.getId());
-        return schedules.stream().map(Schedule::toShortDto).toList();
-    }
-
 
     //Admin endpoint, send bill to user by id in telegram
-    @GetMapping("/user/send_bill/{id}")
+    @GetMapping("/user/send_bill/{id}") //todo delete this endpoint, it's not needed anymore
     public Boolean sendBill(@PathVariable Long id, HttpSession session) {//todo check if it's trainer's student
         User trainer = findTrainerFromSession(session);
         try {
@@ -191,37 +179,8 @@ public class TrainerController {
     public UserFullDTO updateUser(@Valid @RequestBody UserUpdateByTrainerDto userUpdateByTrainerDto, HttpSession session) {
 
         User updatedUser = userService.updateByTrainer(userUpdateByTrainerDto);
-        User trainer = findTrainerFromSession(session);
-
-        List<Schedule> oldSchedules = scheduleService.findAllByStudentIdAndTrainerId(updatedUser.getId(), trainer.getId());
-
         User savedUser = userService.findByIdWithInfo(updatedUser.getId());
-        return UserFullDTO.toFullDTO(savedUser, oldSchedules);
-    }
-
-    @DeleteMapping("user/schedule_delete/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSchedule(@PathVariable Long id, HttpSession session) {
-        User trainer = findTrainerFromSession(session);
-        Schedule scheduleToDelete = scheduleService.findById(id);
-        if (scheduleToDelete.getTrainerId() != trainer.getId()) {
-            throw new RuntimeException("Schedule id=" + id + " does not belong to trainer " + trainer.getName());
-        }
-        scheduleService.deleteSchedule(scheduleToDelete);
-    }
-
-    @PostMapping("user/schedule_add/{currentStudentId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addSchedule(@PathVariable Long currentStudentId, @Validated @RequestBody ScheduleShortDTO newSchedule, HttpSession session) {
-        log.info("dateTime received: " + newSchedule.getDateTime());
-        User trainer = findTrainerFromSession(session);
-        User student = userService.findById(currentStudentId);
-        try {
-            scheduleService.saveNew(trainer.getId(), student.getId(), newSchedule.getDateTime());
-        } catch (RuntimeException e) {
-            log.error("Failed to add new schedule for student id=" + currentStudentId + " at " + newSchedule.getDateTime() + " by trainer " + trainer.getName() + ": " + e.getMessage());
-            throw new RuntimeException("Failed to add new schedule: " + e.getMessage());
-        }
+        return UserFullDTO.toFullDTO(savedUser);
     }
 
     @GetMapping("/lesson/{id}")
@@ -254,7 +213,9 @@ public class TrainerController {
             User trainer = findTrainerFromSession(session);
             infoService.saveFromNewInfoDTO(newInfoDTO, trainer.getId());
         }
-        return LessonFullDTO.toFullDTO(lessonService.lessonCompleted(lessonService.findById(id)));
+          return LessonFullDTO.toFullDTO(lessonService.lessonCompleted(lessonService.findById(id)));
+
+
     }
 
     // Admin endpoint, create new lesson
@@ -285,6 +246,13 @@ public class TrainerController {
         return LessonFullDTO.toFullDTO(updatedLesson);
     }
 
+    @PutMapping("lesson/{id}/change_status/{oldStatus}/to/{newStatus}")
+    public LessonFullDTO changeLessonStatus(@PathVariable Long id, @PathVariable LessonStatus oldStatus,
+                                            @PathVariable LessonStatus newStatus, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        return LessonFullDTO.toFullDTO(lessonService.changeLessonStatus(id, oldStatus, newStatus, trainer.getId()));
+    }
+
     @GetMapping("/my_info")
     public TrainerInfoDTO getTrainerInfo(HttpSession session) {
         User trainer = findTrainerFromSession(session);
@@ -298,9 +266,9 @@ public class TrainerController {
     }
 
     @GetMapping("/telegram_link")
-    public Map<String,String> getTelegramLink(HttpSession session) {
+    public Map<String, String> getTelegramLink(HttpSession session) {
         User trainer = findTrainerFromSession(session);
-        String response= telegramEnterCodeService.createNewLink(trainer.getId());
+        String response = telegramEnterCodeService.createNewLink(trainer.getId());
         log.info(response);
         return Map.of("link", response);
     }
@@ -351,6 +319,13 @@ public class TrainerController {
         return subscriptions.stream().map(subscription -> new StudentSubscriptionDTO(subscription, trainer.getRole())).toList();
     }
 
+    @GetMapping("/subscriptions/{status}")
+    public List<StudentSubscriptionDTO> getSubscriptionByTrainerAndStatus(HttpSession session, @PathVariable SubscriptionStatus status) {
+        User trainer = findTrainerFromSession(session);
+        List<StudentSubscription> subscriptions = subscriptionService.getSubscriptionByTrainerIdAndStatus(trainer.getId(), status);
+        return subscriptions.stream().map(subscription -> new StudentSubscriptionDTO(subscription, trainer.getRole())).toList();
+    }
+
     @GetMapping("/subscription/{id}")
     public StudentSubscriptionFullDTO getSubscriptionById(@PathVariable Long id, HttpSession session) {
         User trainer = findTrainerFromSession(session);
@@ -360,7 +335,7 @@ public class TrainerController {
     @PutMapping("/subscription/{id}/lesson/{lessonId}/remove")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeLessonFromSubscription(@PathVariable Long id, @PathVariable Long lessonId, HttpSession session) {
- //todo (удалить линку и вернуть +1 оставшихся уроков, если экспайред, то вернуть актив)
+        //todo (удалить линку и вернуть +1 оставшихся уроков, если экспайред, то вернуть актив)
     }
 
     @DeleteMapping("/subscription/{id}")
@@ -373,7 +348,8 @@ public class TrainerController {
     @PutMapping("/subscription/{id}/change")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changeSubscription(@PathVariable Long id, @RequestBody ChangeSubscriptionDTO changeDto, HttpSession session) {
-//todo
+        User trainer = findTrainerFromSession(session);
+            subscriptionService.changeSubscription(id, changeDto, trainer.getId());
     }
 
     @PutMapping("/subscription/{id}/paid")
@@ -383,4 +359,34 @@ public class TrainerController {
         paymentService.markSubscriptionPaid(id, trainer.getId());
     }
 
+    @PutMapping("/subscription_types/{id}/change_info")
+    public void changeSubscriptionTypeInfo(@PathVariable Long id, @RequestBody String updatedInfo, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        subscriptionTypeService.changeSubscriptionTypeInfo(id, updatedInfo, trainer.getId());
+    }
+
+    @PutMapping ("/subscription/{id}")
+
+    @PostMapping("/user/{studentId}/newSubscription")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addNewSubscriptionByTrainer(@PathVariable Long studentId, HttpSession session, @RequestBody StudentSubscriptionNewDTO subscriptionDto) {
+        User trainer = findTrainerFromSession(session);
+        //todo проверить что тренер соответствует ученику)
+        lessonService.addNewSubscription(subscriptionDto, studentId);
+    }
+
+    @GetMapping("/user/{studentId}/lessons_planned")
+    public List<LessonShortDTO> getStudentPlannedLessons(@PathVariable Long studentId, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        List<Lesson> lessons = lessonService.findByStatusInAndStudentIdAndTrainerId(List.of(LessonStatus.PLANNED, LessonStatus.PENDING_STUDENT_CONFIRMATION, LessonStatus.PENDING_TRAINER_CONFIRMATION), studentId, trainer.getId());
+        return lessons.stream().map(LessonShortDTO::toShortDTO).toList();
+    }
+
+    @GetMapping("/user/{studentId}/subscriptions_not_expired")
+    public List<StudentSubscriptionDTO> getStudentSubscriptionsNotExpired(@PathVariable Long studentId, HttpSession session) {
+        User trainer = findTrainerFromSession(session);
+        List<StudentSubscription> subscriptions = subscriptionService
+                .getSubscriptionByTrainerIdAndStudentIdAndStatusIn(trainer.getId(), studentId, List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.UNPAID));
+        return subscriptions.stream().map(subscription -> new StudentSubscriptionDTO(subscription, trainer.getRole())).toList();
+    }
 }

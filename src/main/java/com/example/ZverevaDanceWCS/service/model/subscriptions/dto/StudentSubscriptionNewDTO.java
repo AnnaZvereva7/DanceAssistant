@@ -18,6 +18,6 @@ public class StudentSubscriptionNewDTO {
     Long subscriptionTypeId;
     Long studentId;
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @FutureOrPresent
+    //@FutureOrPresent
     LocalDate startDate;
 }

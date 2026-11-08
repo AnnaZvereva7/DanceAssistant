@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.mailCalendarEvent;
+package com.example.ZverevaDanceWCS.service.model.mailService;
 
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
 import org.springframework.beans.factory.annotation.Value;

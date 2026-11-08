@@ -1,4 +1,4 @@
-package com.example.ZverevaDanceWCS.service.model.mailCalendarEvent;
+package com.example.ZverevaDanceWCS.service.model.mailService;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

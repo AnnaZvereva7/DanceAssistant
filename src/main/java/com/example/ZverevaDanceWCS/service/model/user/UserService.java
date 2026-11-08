@@ -1,17 +1,10 @@
 package com.example.ZverevaDanceWCS.service.model.user;
 
-import com.example.ZverevaDanceWCS.service.Constant;
 import com.example.ZverevaDanceWCS.service.model.calendarLink.CalendarLinkService;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
-import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
-import com.example.ZverevaDanceWCS.service.model.lessons.LessonService;
-import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
 import com.example.ZverevaDanceWCS.service.model.user.studentInfo.InfoService;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.TrainerInfoDTO;
-import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserNewDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByTrainerDto;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +13,6 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -34,7 +26,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final InfoService infoService;
-    private final ScheduleService scheduleService;
     private final TrainerStudentService trainerStudentService;
     private final CalendarLinkService calendarLinkService;
     @Value("${public.url}")
@@ -42,10 +33,9 @@ public class UserService {
 
 
 
-    public UserService(UserRepository userRepository, InfoService infoService, ScheduleService scheduleService, TrainerStudentService trainerStudentService, CalendarLinkService calendarLinkService) {
+    public UserService(UserRepository userRepository, InfoService infoService,  TrainerStudentService trainerStudentService, CalendarLinkService calendarLinkService) {
         this.userRepository = userRepository;
         this.infoService = infoService;
-        this.scheduleService = scheduleService;
         this.trainerStudentService = trainerStudentService;
         this.calendarLinkService = calendarLinkService;
     }
@@ -75,14 +65,11 @@ public class UserService {
         user.setBirthday(dto.getBirthday());
         userRepository.save(user);
         dto.setAdditionalInfo(user.getAdditionalInfo());
-        dto.setSchedules(scheduleService.findByStudent(user.getId())
-                .stream()
-                .map(Schedule::toShortDto)
-                .toList());
         return dto;
     }
 
-    public User updateByTrainer(UserUpdateByTrainerDto userDto) {
+    public User updateByTrainer(UserUpdateByTrainerDto userDto) { //name, email, role
+        //todo change balance
         User user = findById(userDto.getStudentId());
         if(!Objects.equals(user.getName(), userDto.getName())) {
             user.setName(userDto.getName());
@@ -94,9 +81,6 @@ public class UserService {
         }
         if(!Objects.equals(user.getRole(), userDto.getRole())) {
             user.setRole(userDto.getRole());
-        }
-        if(!Objects.equals(user.getMessenger(), userDto.getMessenger())) {
-            user.setMessenger(userDto.getMessenger());
         }
         return userRepository.save(user);
     }
@@ -132,6 +116,10 @@ public class UserService {
             newUser.setUserSiteStatus(UserSiteStatus.ACTIVE);
             return userRepository.save(newUser);
         }
+    }
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email.toLowerCase(Locale.ROOT));
     }
 
     public void saveUser(User user) {

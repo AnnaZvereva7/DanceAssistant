@@ -1,11 +1,13 @@
 package com.example.ZverevaDanceWCS.service.model.subscriptions;
 
+
 import com.example.ZverevaDanceWCS.service.model.lessons.Lesson;
+import com.example.ZverevaDanceWCS.service.model.mailService.SubscriptionMailService;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.ChangeSubscriptionDTO;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramBot;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -13,16 +15,19 @@ import java.util.List;
 public class SubscriptionService {
     final LessonSubscriptionLinkRepository lessonSubscriptionLinkRepository;
     final StudentSubscriptionRepository studentSubscriptionRepository;
+    final SubscriptionMailService subscriptionMailService;
+    final TelegramBot telegramBot;
 
     public List<StudentSubscription> getSubscriptionsByStudentId(Long studentId) {
         return studentSubscriptionRepository.findByStudentId(studentId);
     }
 
-    public void saveSubscription(StudentSubscription subscription) {
-        if(subscription.getRemainingLessons()==0){
+    public StudentSubscription saveSubscription(StudentSubscription subscription)  {
+        if (subscription.getRemainingLessons() == 0) {
             subscription.setStatus(SubscriptionStatus.EXPIRED);
+            subscriptionMailService.sendSubscriptionExpired(subscription);
         }
-        studentSubscriptionRepository.save(subscription);
+        return studentSubscriptionRepository.save(subscription);
     }
 
     public List<Lesson> getLessonsBySubscriptionId(Long subscriptionId) {
@@ -77,13 +82,37 @@ public class SubscriptionService {
             throw new IllegalArgumentException("You are not authorized to delete this subscription");
         }
         List<LessonSubscriptionLink> links = lessonSubscriptionLinkRepository.findBySubscriptionId(subscriptionId);
-        if(!links.isEmpty()) {
+        if (!links.isEmpty()) {
             throw new RuntimeException("Cannot delete subscription with completed lessons");
         }
-        if(subscription.getStatus()==SubscriptionStatus.ACTIVE) {
+        if (subscription.getStatus() == SubscriptionStatus.ACTIVE) {
             throw new RuntimeException("Cannot delete active subscription");
         }
         studentSubscriptionRepository.delete(subscription);
     }
 
+    public List<StudentSubscription> getSubscriptionByTrainerIdAndStatus(Long trainerId, SubscriptionStatus status) {
+        return studentSubscriptionRepository.findBySubscriptionTypeTrainerIdAndStatus(trainerId, status);
+    }
+
+    public List<StudentSubscription> getSubscriptionByTrainerIdAndStudentIdAndStatusIn(Long trainerId, Long studentId, List<SubscriptionStatus> statuses) {
+        return studentSubscriptionRepository.findBySubscriptionTypeTrainerIdAndStudentIdAndStatusIn(trainerId, studentId, statuses);
+    }
+
+    public StudentSubscription changeSubscription(Long id, ChangeSubscriptionDTO changeDto, Long trainerId) {
+        StudentSubscription subscription = findById(id);
+        if (!subscription.getSubscriptionType().getTrainerId().equals(trainerId)) {
+            throw new IllegalArgumentException("You are not authorized to change this subscription");
+        }
+        if (changeDto.getEndDate() != null) {
+            subscription.setEndDate(changeDto.getEndDate());
+        }
+        if (changeDto.getStatus() != null) {
+            subscription.setStatus(changeDto.getStatus());
+        }
+        if (changeDto.getComment() != null) {
+            subscription.setComment(changeDto.getComment());
+        }
+        return saveSubscription(subscription);
+    }
 }

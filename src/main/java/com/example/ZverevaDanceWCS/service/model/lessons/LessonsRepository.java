@@ -32,6 +32,7 @@ public interface LessonsRepository extends JpaRepository<Lesson, Long> {
 
     List<Lesson> findByStatusIn(List<LessonStatus> statuses);
     List<Lesson> findByStatusInAndTrainerId(List<LessonStatus> statuses, Long trainerId);
+    List<Lesson> findByStatusInAndStudentIdAndTrainerId (List<LessonStatus> statuses, Long studentId, Long trainerId);
     List<Lesson> findByStatusInAndStudentId(List<LessonStatus> statuses, Long trainerId);
 
     List<Lesson> getLessonsByStudentIdAndStartTimeBetween(Long studentId, LocalDateTime startDate, LocalDateTime endDate);

@@ -29,7 +29,7 @@ public class CalendarLinkService {
     }
 
     public Long findTrainerIdByToken(String token) {
-        Optional<CalendarLink> linkOpt = calendarLinkRepository.findTrainerIdByToken(token);
+        Optional<CalendarLink> linkOpt = calendarLinkRepository.findByTokenAndExpires(token, false);
         if (linkOpt.isPresent()) {
            return linkOpt.get().getTrainerId();
         } else {

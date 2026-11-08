@@ -119,7 +119,7 @@
         amount_lessons INT NOT NULL,
         price INT NOT NULL,
         active BOOLEAN NOT NULL,
-        comment VARCHAR(255) NOT NULL
+        comment TEXT NOT NULL
     );
 
     create table if not exists students_subscriptions (
@@ -133,7 +133,7 @@
         remaining_lessons INT NOT NULL,
         created_at TIMESTAMP NOT NULL,
         status VARCHAR(50) NOT NULL,
-        comment VARCHAR(255)
+        comment TEXT
     );
 
     create table if not exists lesson_subscription_links (

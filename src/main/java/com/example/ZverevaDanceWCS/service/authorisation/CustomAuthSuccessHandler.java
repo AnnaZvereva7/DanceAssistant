@@ -48,7 +48,8 @@ public class CustomAuthSuccessHandler implements AuthenticationSuccessHandler {
             email = (String) attrs.get("email");
             name  = (String) attrs.get("name");
         }
-        User user = userService.findOrCreateNewUserFromGoogle(email, name);
+        User user = userService.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Authenticated user account was not created"));
         if (user.getUserSiteStatus() == UserSiteStatus.BLOCKED) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "User is blocked");
             return;

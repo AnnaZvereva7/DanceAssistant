@@ -8,6 +8,7 @@ import com.example.ZverevaDanceWCS.service.model.payments.Payment;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
 import com.example.ZverevaDanceWCS.service.model.payments.TransactionDataDao;
+import com.example.ZverevaDanceWCS.service.model.subscriptions.StudentSubscription;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionService;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionTypeService;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.StudentSubscriptionDTO;
@@ -15,11 +16,9 @@ import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.StudentSubscr
 import com.example.ZverevaDanceWCS.service.model.subscriptions.dto.SubscriptionTypeStringDTO;
 import com.example.ZverevaDanceWCS.service.model.trainerStudentLink.TrainerStudentService;
 import com.example.ZverevaDanceWCS.service.model.user.UserService;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.Schedule;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleService;
-import com.example.ZverevaDanceWCS.service.model.user.schedule.ScheduleShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserShortDTO;
 import com.example.ZverevaDanceWCS.service.model.user.userDTO.UserUpdateByUserDto;
+import com.example.ZverevaDanceWCS.service.telegramBot.TelegramBot;
 import com.example.ZverevaDanceWCS.service.telegramBot.TelegramEnterCode.TelegramEnterCodeService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -44,24 +43,24 @@ public class UserController {
     final LessonService lessonService;
     final UserService userService;
     final PaymentService paymentService;
-    final ScheduleService scheduleService;
     final TelegramEnterCodeService telegramEnterCodeService;
     final TrainerStudentService trainerStudentService;
     final SubscriptionService subscriptionService;
     final SubscriptionTypeService subscriptionTypeService;
+    final TelegramBot telegramBot;
 
     public UserController(LessonService lessonService, UserService userService, PaymentService paymentService,
-                          ScheduleService scheduleService, TelegramEnterCodeService telegramEnterCodeService,
+                          TelegramEnterCodeService telegramEnterCodeService,
                           TrainerStudentService trainerStudentService, SubscriptionService subscriptionService,
-                          SubscriptionTypeService subscriptionTypeService) {
+                          SubscriptionTypeService subscriptionTypeService, TelegramBot telegramBot) {
         this.lessonService = lessonService;
         this.userService = userService;
         this.paymentService = paymentService;
-        this.scheduleService = scheduleService;
         this.telegramEnterCodeService = telegramEnterCodeService;
         this.trainerStudentService = trainerStudentService;
         this.subscriptionService = subscriptionService;
         this.subscriptionTypeService = subscriptionTypeService;
+        this.telegramBot = telegramBot;
     }
 
     @PostMapping("/confirm_lesson/{lessonId}")
@@ -111,11 +110,7 @@ public class UserController {
     @GetMapping("/my_info")
     public UserUpdateByUserDto getUserDetails(HttpSession session) {
         Long userId = (Long) session.getAttribute("USER_ID");
-        List<ScheduleShortDTO> schedules = scheduleService.findByStudent(userId)
-                .stream()
-                .map(Schedule::toShortDto)
-                .toList();
-        return UserUpdateByUserDto.fromUser(userService.findByIdWithInfo(userId), schedules);
+        return UserUpdateByUserDto.fromUser(userService.findByIdWithInfo(userId));
     }
 
     @GetMapping("/to_pay")
@@ -187,10 +182,13 @@ public class UserController {
     }
 
     @PostMapping("/subscription/new")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addNewSubscription(@RequestBody StudentSubscriptionNewDTO dto, HttpSession session) {
+    public String addNewSubscription(@RequestBody StudentSubscriptionNewDTO dto, HttpSession session) {
         Long userId = (Long) session.getAttribute("USER_ID");
-        lessonService.addNewSubscription(dto, userId);
+        StudentSubscription subscription =lessonService.addNewSubscription(dto, userId);
+        Long trainerId= subscription.getSubscriptionType().getTrainerId();
+        telegramBot.send(userService.findById(trainerId).getChatId(), "New subscription added for student " + subscription.getStudentName()
+                + "price "+ subscription.getPrice());
+    return subscription.getSubscriptionType().getInfo();
     }
 
     @GetMapping("/subscription/{subscriptionId}")

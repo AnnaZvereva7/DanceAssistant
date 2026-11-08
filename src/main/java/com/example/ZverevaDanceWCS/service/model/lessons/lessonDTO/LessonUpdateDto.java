@@ -1,5 +1,6 @@
 package com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO;
 
+import com.example.ZverevaDanceWCS.service.model.lessons.LessonStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

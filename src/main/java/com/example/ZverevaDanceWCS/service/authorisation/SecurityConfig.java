@@ -57,6 +57,11 @@ public class SecurityConfig {
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(u -> u.oidcUserService(customOidcUserService))
                         .successHandler(successHandler)
+                        .failureHandler((request, response, exception) -> {
+                            request.getSession().removeAttribute(SessionApiController.CALENDAR_TOKEN_SESSION_KEY);
+                            request.getSession().removeAttribute(SessionApiController.RETURN_TO_SESSION_KEY);
+                            response.sendRedirect("/index.html?loginError=1");
+                        })
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")

@@ -54,6 +54,9 @@ public class StudentSubscription {
     @Column
     String comment;
 
+    @Transient
+    int price;
+
     public static final Comparator<StudentSubscription> BY_STATUS =
             Comparator.comparingInt(subscription ->
                     switch (subscription.getStatus()) {

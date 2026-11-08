@@ -200,8 +200,12 @@
         </div>
 
         <div class="note">
-            Guest mode lets you open the public booking page without signing in.
+            New students need a booking link from their trainer to sign in for the first time.
+            Existing users can sign in here. Guest mode is available without signing in.
         </div>
+        <p id="loginError" role="alert" class="note" style="display:none; color:#b91c1c;">
+            Sign-in failed. If you are new, open the booking link from your trainer and sign in there.
+        </p>
 
         <div class="footer-link">
             <a href="/privacy-policy.html">Privacy Policy</a>
@@ -211,6 +215,10 @@
 
 <script>
 <!--    todo поменяйте если другой порт-->
+
+    if (new URLSearchParams(window.location.search).has("loginError")) {
+        document.getElementById("loginError").style.display = "block";
+    }
 
     function loginGoogle() {
     console.log("Logging in with Google");

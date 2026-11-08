@@ -275,14 +275,39 @@
         }
 
         .subscription-item{
+          display:flex;
+          align-items:center;
+          gap:12px;
+          flex-wrap:wrap;
           padding:12px;
           border:1px solid var(--border);
           border-radius:12px;
           background:#fff;
         }
 
+        .subscription-item a{
+          min-width:0;
+          flex:0 1 auto;
+        }
+
+        .subscription-tooltip{
+          display:inline-flex;
+          align-items:center;
+          justify-content:center;
+          width:28px;
+          height:28px;
+          border-radius:999px;
+          border:1px solid var(--border);
+          background:var(--status-bg);
+          color:var(--muted);
+          font-weight:700;
+          cursor:help;
+          flex:0 0 auto;
+        }
+
         .subscription-detail-card{
           margin-top:16px;
+          width:100%;
           padding:16px;
           border:1px solid var(--border);
           border-radius:12px;
@@ -351,6 +376,7 @@
             <ul id="schedule"></ul>
             <div class="actions">
                 <button id="newLessonBtn" class="primary-btn">Add New Lesson</button>
+                <button id="addNewSubscriptionFromScheduleBtn" class="primary-btn">Add new subscription</button>
             </div>
 <div class="actions">
             <button id="getTelegramLinkStudentBtn" class="primary-btn">Get Telegram Link</button>
@@ -372,9 +398,6 @@
                 </label>
                 <label>Additional info:
                     <textarea id="studentPlans" rows="6"></textarea>
-                </label>
-                <label>Schedule:
-                    <textarea id="studentSchedule"></textarea>
                 </label>
             </div>
 
@@ -429,12 +452,6 @@
                     <button id="addNewSubscriptionBtn" class="primary-btn">Add new</button>
                 </div>
                 <div id="subscriptionsList" class="subscription-list"></div>
-                <div id="subscriptionFullInfo" class="subscription-detail-card" style="display:none;">
-                    <div class="actions" style="justify-content:flex-end; margin-top:0;">
-                        <button id="closeSubscriptionFullInfoBtn" class="secondary-btn">Close</button>
-                    </div>
-                    <div id="subscriptionFullInfoContent"></div>
-                </div>
             </div>
         </div>
 
@@ -525,13 +542,13 @@
     });
 
     document.getElementById("newLessonBtn").addEventListener("click", addNewLesson);
+    document.getElementById("addNewSubscriptionFromScheduleBtn").addEventListener("click", openNewSubscriptionModal);
     document.getElementById("getTelegramLinkStudentBtn").addEventListener("click", getTelegramLinkStudent);
     document.getElementById("saveChangesStudentBtn").addEventListener("click", saveChangesStudent);
     document.getElementById("addNewSubscriptionBtn").addEventListener("click", openNewSubscriptionModal);
     document.getElementById("closeSubscriptionModalBtn").addEventListener("click", closeNewSubscriptionModal);
     document.getElementById("subscriptionTrainerNextBtn").addEventListener("click", loadTrainerSubscriptionTypes);
     document.getElementById("createSubscriptionBtn").addEventListener("click", createStudentSubscription);
-    document.getElementById("closeSubscriptionFullInfoBtn").addEventListener("click", closeSubscriptionFullInfo);
 
     document.getElementById("loadLessonsPaymentBtn").addEventListener("click", async () => {
       await loadMonthLessonsPaymentDetails?.(); // если у тебя есть функция
@@ -699,7 +716,6 @@
         document.getElementById("studentEmail").value = student.email ?? "";
         document.getElementById("studentBirthday").value = student.birthday ?? "";
         document.getElementById("studentPlans").value = student.additionalInfo ?? "";
-        document.getElementById("studentSchedule").value = student.schedule ?? "";
       } catch (error) {
         console.error("Error loading student:", error);
       }
@@ -774,8 +790,7 @@
     }
 
     function closeSubscriptionFullInfo() {
-      document.getElementById("subscriptionFullInfo").style.display = "none";
-      document.getElementById("subscriptionFullInfoContent").innerHTML = "";
+      document.querySelectorAll(".subscription-item .subscription-detail-card").forEach(card => card.remove());
     }
 
     function getSubscriptionTypeId(item) {
@@ -892,8 +907,13 @@
           throw new Error("Failed to create subscription");
         }
 
+        const subscriptionInfo = (await response.text()).trim();
         closeNewSubscriptionModal();
-        alert("The subscription has been created. Please wait for payment instructions. Please book your lesson times in advance.");
+        let successMessage = "The subscription has been created. Please wait for payment instructions. Please book your lesson times in advance.";
+        if (subscriptionInfo) {
+          successMessage += "\n" + subscriptionInfo;
+        }
+        alert(successMessage);
         await loadSubscriptions();
       } catch (error) {
         console.error("Error creating subscription:", error);
@@ -918,10 +938,16 @@
         link.textContent = subscription.info ?? "Subscription";
         link.addEventListener("click", async (event) => {
           event.preventDefault();
-          await loadSubscriptionFullInfo(subscription.id);
+          await loadSubscriptionFullInfo(subscription.id, item);
         });
 
+        const tooltip = document.createElement("span");
+        tooltip.className = "subscription-tooltip";
+        tooltip.textContent = "i";
+        tooltip.title = subscription.subscriptionTypeInfo ?? "";
+
         item.appendChild(link);
+        item.appendChild(tooltip);
         container.appendChild(item);
       });
     }
@@ -947,7 +973,13 @@
       }
     }
 
-    async function loadSubscriptionFullInfo(subscriptionId) {
+    async function loadSubscriptionFullInfo(subscriptionId, subscriptionItem) {
+      const existingDetail = subscriptionItem.querySelector(".subscription-detail-card");
+      if (existingDetail) {
+        existingDetail.remove();
+        return;
+      }
+
       try {
         const response = await fetch(API_BASE+"/subscription/" + subscriptionId, {
           credentials: "same-origin"
@@ -958,7 +990,24 @@
         }
 
         const lessons = await response.json();
-        const content = document.getElementById("subscriptionFullInfoContent");
+        closeSubscriptionFullInfo();
+
+        const detailCard = document.createElement("div");
+        detailCard.className = "subscription-detail-card";
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        actions.style.justifyContent = "flex-end";
+        actions.style.marginTop = "0";
+
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.className = "secondary-btn";
+        closeButton.textContent = "Close";
+        closeButton.addEventListener("click", closeSubscriptionFullInfo);
+        actions.appendChild(closeButton);
+
+        const content = document.createElement("div");
         content.innerHTML = `<div style="margin-top:10px;"><strong>Lessons:</strong></div>`;
 
         const lessonList = document.createElement("ul");
@@ -969,7 +1018,9 @@
           lessonList.appendChild(li);
         });
         content.appendChild(lessonList);
-        document.getElementById("subscriptionFullInfo").style.display = "block";
+        detailCard.appendChild(actions);
+        detailCard.appendChild(content);
+        subscriptionItem.appendChild(detailCard);
       } catch (error) {
         console.error("Error loading subscription full info:", error);
         alert("Failed to load subscription");

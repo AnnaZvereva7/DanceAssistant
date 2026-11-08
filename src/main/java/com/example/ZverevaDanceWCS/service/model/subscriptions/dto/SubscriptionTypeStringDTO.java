@@ -13,9 +13,11 @@ import lombok.Setter;
 public class SubscriptionTypeStringDTO {
     Long SubscriptionTypeId;
     String SubscriptionTypeString;
+    String info;
 
     public SubscriptionTypeStringDTO(SubscriptionType subscriptionType) {
         this.SubscriptionTypeId = subscriptionType.getId();
         this.SubscriptionTypeString = subscriptionType.toString();
+        this.info=subscriptionType.getInfo();
     }
 }

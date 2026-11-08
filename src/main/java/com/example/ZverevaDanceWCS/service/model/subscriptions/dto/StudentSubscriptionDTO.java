@@ -15,17 +15,20 @@ import lombok.Setter;
 public class StudentSubscriptionDTO {
     Long id;
     String info; //todo trainer name
+    String subscriptionTypeInfo;
 
     public StudentSubscriptionDTO(StudentSubscription subscription, UserRole role) {
         this.id = subscription.getId();
         if (role == UserRole.TRAINER||role == UserRole.ADMIN) {
-            this.info = subscription.getStartDate().format(Constant.formatterJustDate) + " - " + subscription.getEndDate().format(Constant.formatterJustDate) +
-                    "   remain lessons: " + subscription.getRemainingLessons() + "/" + subscription.getSubscriptionType().getAmountLessons() +
-                    ", " + subscription.getStatus().toString() + "  (student: " + subscription.getStudentName() + ")";
+            String studentName = subscription.getStudentName().trim().split("\\s+", 2)[0];
+            this.info = studentName + " (" + subscription.getRemainingLessons() + "/" + subscription.getSubscriptionType().getAmountLessons() +
+                    ", " + subscription.getStatus() + ", " + subscription.getStartDate().format(Constant.formatterJustDate) +
+                    "-" + subscription.getEndDate().format(Constant.formatterJustDate) + ")";
         } else {
             this.info = subscription.getStartDate().format(Constant.formatterJustDate) + " - " + subscription.getEndDate().format(Constant.formatterJustDate) +
                     "   remain lessons: " + subscription.getRemainingLessons() + "/" + subscription.getSubscriptionType().getAmountLessons() +
                     ", " + subscription.getStatus().toString() + "  (trainer: " + subscription.getTrainerName() + ")";
         }
+        this.subscriptionTypeInfo=subscription.getSubscriptionType().getInfo();
     }
 }

@@ -111,9 +111,6 @@ public class CalendarController {
     public void confirmLessonByTrainer(@PathVariable(name = "lessonId") String eventId) {
         Long lessonId=calendarEventService.extractEventId(eventId, "lesson");
         Lesson lesson=lessonService.confirmLesson(lessonId, LessonStatus.PENDING_TRAINER_CONFIRMATION);
-        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
-            telegramBot.send(lesson.getTrainer().getChatId(), "Lesson confirmed: " + lesson.getStartTime().format(Constant.formatterDayTime));
-        }
     }
 
     @DeleteMapping("/user/delete_lesson/{lessonId}")
@@ -139,9 +136,6 @@ public class CalendarController {
         Long lessonId=calendarEventService.extractEventId(eventId, "lesson");
         Lesson lesson = lessonService.findById(lessonId);
         lessonService.cancelLesson(lesson);
-        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
-            telegramBot.send(lesson.getStudent().getChatId(), "Lesson cancelled: " + lesson.getStartTime().format(Constant.formatterDayTime));
-        }
     }
 
     @GetMapping("user/get_free_slots/{trainerId}")
@@ -206,9 +200,6 @@ public class CalendarController {
         User trainer = findUserFromSession(session);
         User student = userService.findById(studentId);
         Lesson lesson = lessonService.createLessonFromTrainerCalendar(timeRequest, trainer, student);
-        if(lesson.getStudent().getMessenger()== Messenger.TELEGRAM) {
-            telegramBot.send(lesson.getStudent().getChatId(), "New lesson: " + lesson.getStartTime().format(Constant.formatterDayTime) + " with trainer " + lesson.getTrainer().getName());
-        }
     }
 
 

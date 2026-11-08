@@ -130,6 +130,12 @@
             border-color: rgba(59,130,246,.35);
         }
 
+        .subscription-filter.active {
+            background: linear-gradient(180deg, rgba(126,231,135,.95), rgba(126,231,135,.65));
+            border-color: #22c55e;
+            color: #04120a;
+        }
+
         #loadMyInfoBtn,
         #loadStudentsBtn,
         #loadLessonsBtn,
@@ -143,10 +149,12 @@
         #newStudentBtn,
         #submitStudentBtn,
         #newLessonBtn,
+        #newStudentSubscriptionBtn,
         #newInfoBtn,
         #saveChangesStudentBtn,
-        #addScheduleBtn,
         #completeLessonBtn,
+        #changeLessonStatusBtn,
+        #confirmLessonStatusBtn,
         #saveChangesLessonBtn,
         #toStudent,
         #sendEmailInvitationBtn,
@@ -157,6 +165,7 @@
         #paidSubscriptionBtn,
         #addSubscriptionTypeBtn,
         #saveSubscriptionTypeBtn,
+        #createStudentSubscriptionBtn,
         #addNewLessonBtn,
         #addNewInfoBtn,
         #nextBtn {
@@ -169,6 +178,7 @@
         #cancelLessonBtn,
         #closeNewLessonModalBtn,
         #closeNewInfoModalBtn,
+        #closeStudentSubscriptionModalBtn,
         #closeSubscriptionModalBtn,
         #closeModalBtn {
             background: linear-gradient(180deg, rgba(239,68,68,.18), rgba(239,68,68,.10));
@@ -193,6 +203,28 @@
             margin-bottom: 10px;
         }
 
+        .left-panel ul {
+            margin-top: 10px;
+        }
+
+        .left-panel li {
+            padding: 6px 0;
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            margin-bottom: 0;
+            border-bottom: 1px solid rgba(15,23,42,.08);
+        }
+
+        .left-panel li:last-child {
+            border-bottom: none;
+        }
+
+        .left-panel a {
+            display: block;
+            line-height: 1.35;
+        }
+
         a {
             cursor: pointer;
             color: var(--accent);
@@ -209,6 +241,21 @@
             margin-top: 8px;
             color: var(--muted);
             font-size: 13px;
+        }
+
+        .lesson-status-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        .lesson-status-row label {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .lesson-status-row button {
+            flex: 0 0 auto;
         }
 
         select {
@@ -296,6 +343,40 @@
 
         .subscription-text {
             flex: 1;
+        }
+
+        .subscription-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .subscription-title {
+            font-weight: 700;
+        }
+
+        .subscription-info {
+            width: 100%;
+            min-height: 72px;
+            margin-top: 4px;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--muted);
+            word-break: break-word;
+            resize: vertical;
+        }
+
+        .subscription-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .subscription-actions button {
+            margin: 0;
         }
 
         #myDetails,
@@ -387,6 +468,11 @@
             <ul id="balanceList"></ul>
         </div>
         <div id="subscriptionsTab" class="hidden">
+            <div aria-label="Subscription status">
+                <button type="button" class="subscription-filter" data-status="ACTIVE" aria-pressed="false">Active</button>
+                <button type="button" class="subscription-filter active" data-status="UNPAID" aria-pressed="true">Unpaid</button>
+                <button type="button" class="subscription-filter" data-status="EXPIRED" aria-pressed="false">Expired</button>
+            </div>
             <ul id="subscriptionsList"></ul>
         </div>
 
@@ -451,23 +537,16 @@
             <label>Plans:
                 <textarea id="studentPlans" rows="6"></textarea>
             </label>
-            <div class="schedule-block">
-                <label>Schedule:</label>
-
-                <div id="studentScheduleList" class="schedule-list">
-                    <!-- items rendered by JS -->
-                </div>
-
-                <div class="schedule-add-row">
-                    <input type="text" id="scheduleInput" placeholder="e.g. WEDNESDAY 10:00">
-                    <button id="addScheduleBtn" type="button">Add schedule</button>
-                </div>
-            </div>
             <label>Student Balance:
                 <input type="number" id="studentBalance"> </input>
             </label>
+            <h3>Planned lessons</h3>
+            <ul id="studentPlannedLessons"></ul>
+            <h3>Current subscriptions</h3>
+            <ul id="studentCurrentSubscriptions"></ul>
 
             <button id="newLessonBtn">NewLesson</button>
+            <button id="newStudentSubscriptionBtn">New subscription</button>
             <button id="newInfoBtn">NewInfo</button>
             <button id="saveChangesStudentBtn">SaveChanges</button>
             <div id="newLessonModal" class="modal hidden">
@@ -489,6 +568,21 @@
                     <div class="modal-actions">
                         <button id="addNewLessonBtn" type="button">Add</button>
                         <button id="closeNewLessonModalBtn" type="button">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            <div id="newStudentSubscriptionModal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>New subscription</h3>
+                    <label>Subscription type:
+                        <select id="newStudentSubscriptionType"></select>
+                    </label>
+                    <label>Start date:
+                        <input type="date" id="newStudentSubscriptionStartDate">
+                    </label>
+                    <div class="modal-actions">
+                        <button id="createStudentSubscriptionBtn" type="button">Create</button>
+                        <button id="closeStudentSubscriptionModalBtn" type="button">Cancel</button>
                     </div>
                 </div>
             </div>
@@ -526,9 +620,28 @@
             <label>Cost (EUR/per hour):
                 <input type="number" id="lessonCost">
             </label>
-            <label>Status:
-                <textarea id="lessonStatus"></textarea>
-            </label>
+            <div class="lesson-status-row">
+                <label>Status:
+                    <input type="text" id="lessonStatus" readonly>
+                </label>
+                <button id="changeLessonStatusBtn" type="button">Change status</button>
+            </div>
+
+            <div id="changeLessonStatusModal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>New status</h3>
+                    <label for="newLessonStatusChoice">New status</label>
+                    <select id="newLessonStatusChoice">
+                        <option value="PENDING_STUDENT_CONFIRMATION">PENDING_STUDENT_CONFIRMATION</option>
+                        <option value="PLANNED">PLANNED</option>
+                        <option value="CANCELED_WITH_CHARGE">CANCELED_WITH_CHARGE</option>
+                    </select>
+                    <div class="modal-actions">
+                        <button id="confirmLessonStatusBtn" type="button">Save</button>
+                        <button id="closeLessonStatusModalBtn" type="button">Cancel</button>
+                    </div>
+                </div>
+            </div>
 
             <button id="completeLessonBtn">Completed</button>
             <div id="completeLessonModal" class="modal hidden">
@@ -624,6 +737,7 @@
     const nextBtn = document.getElementById("nextBtn");
     const closeModalBtn = document.getElementById("closeModalBtn");
     const lessonInfoInput = document.getElementById("lessonInfoInput");
+    const changeLessonStatusModal = document.getElementById("changeLessonStatusModal");
     const loadStudentsBtn = document.getElementById("loadStudentsBtn");
     const studentsTab = document.getElementById("studentsTab");
     const studentDetails = document.getElementById("studentDetails");
@@ -642,6 +756,9 @@
     const newSubscriptionModal = document.getElementById("newSubscriptionModal");
     const closeSubscriptionModalBtn = document.getElementById("closeSubscriptionModalBtn");
     const saveSubscriptionTypeBtn = document.getElementById("saveSubscriptionTypeBtn");
+    const newStudentSubscriptionModal = document.getElementById("newStudentSubscriptionModal");
+    const closeStudentSubscriptionModalBtn = document.getElementById("closeStudentSubscriptionModalBtn");
+    const createStudentSubscriptionBtn = document.getElementById("createStudentSubscriptionBtn");
 
     function showCompleteLessonModal() {
         completeLessonModal.classList.remove("hidden");
@@ -651,6 +768,10 @@
     function hideCompleteLessonModal() {
         completeLessonModal.classList.add("hidden");
         completeLessonModal.style.display = "none";
+    }
+
+    function hideChangeLessonStatusModal() {
+        changeLessonStatusModal.classList.add("hidden");
     }
 
     function showNewLessonModal() {
@@ -681,6 +802,62 @@
     function hideNewSubscriptionModal() {
         newSubscriptionModal.classList.add("hidden");
         newSubscriptionModal.style.display = "none";
+    }
+
+    function showStudentSubscriptionModal() {
+        document.getElementById("newStudentSubscriptionStartDate").value = todayIsoDate();
+        newStudentSubscriptionModal.classList.remove("hidden");
+        newStudentSubscriptionModal.style.display = "flex";
+    }
+
+    function hideStudentSubscriptionModal() {
+        newStudentSubscriptionModal.classList.add("hidden");
+        newStudentSubscriptionModal.style.display = "none";
+    }
+
+    function todayIsoDate() {
+        const now = new Date();
+        const timezoneOffsetMs = now.getTimezoneOffset() * 60000;
+        return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 10);
+    }
+
+    async function loadStudentSubscriptionTypes() {
+        const select = document.getElementById("newStudentSubscriptionType");
+        select.innerHTML = "<option value=\"\">Loading...</option>";
+
+        try {
+            const response = await fetch(API_BASE + "/subscription_types", {
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                select.innerHTML = "<option value=\"\">Failed to load</option>";
+                return false;
+            }
+
+            const subscriptionTypes = await response.json();
+            const items = Array.isArray(subscriptionTypes)
+                ? subscriptionTypes
+                : (subscriptionTypes ? [subscriptionTypes] : []);
+
+            select.innerHTML = "";
+            if (items.length === 0) {
+                select.innerHTML = "<option value=\"\">No subscription types</option>";
+                return false;
+            }
+
+            items.forEach(subscriptionType => {
+                const option = document.createElement("option");
+                option.value = String(getSubscriptionTypeId(subscriptionType) ?? "");
+                option.textContent = subscriptionTypeToString(subscriptionType);
+                select.appendChild(option);
+            });
+            return true;
+        } catch (error) {
+            console.error("Error loading student subscription types:", error);
+            select.innerHTML = "<option value=\"\">Failed to load</option>";
+            return false;
+        }
     }
 
 
@@ -771,12 +948,31 @@
         document.getElementById("newLessonStatus").value = "PENDING_STUDENT_CONFIRMATION";
         studentDetails.classList.remove("hidden");
         showNewLessonModal();
+        hideStudentSubscriptionModal();
         hideNewInfoModal();
     });
     closeNewLessonModalBtn.addEventListener("click", hideNewLessonModal);
     newLessonModal.addEventListener("click", (event) => {
         if (event.target === newLessonModal) {
             hideNewLessonModal();
+        }
+    });
+    createStudentSubscriptionBtn.addEventListener("click", createStudentSubscription);
+    document.getElementById("newStudentSubscriptionBtn").addEventListener("click", async () => {
+        studentDetails.classList.remove("hidden");
+        hideNewLessonModal();
+        hideNewInfoModal();
+        const loaded = await loadStudentSubscriptionTypes();
+        if (!loaded) {
+            alert("No available subscription types");
+            return;
+        }
+        showStudentSubscriptionModal();
+    });
+    closeStudentSubscriptionModalBtn.addEventListener("click", hideStudentSubscriptionModal);
+    newStudentSubscriptionModal.addEventListener("click", (event) => {
+        if (event.target === newStudentSubscriptionModal) {
+            hideStudentSubscriptionModal();
         }
     });
     /*todo выведение на экран формы информации(планы и что делали) */
@@ -786,6 +982,7 @@
         studentDetails.classList.remove("hidden");
         showNewInfoModal();
         hideNewLessonModal();
+        hideStudentSubscriptionModal();
     });
     closeNewInfoModalBtn.addEventListener("click", hideNewInfoModal);
     newInfoModal.addEventListener("click", (event) => {
@@ -811,12 +1008,16 @@
    saveChangesStudentBtn.addEventListener("click", () => {
         hideNewInfoModal();
         hideNewLessonModal();
+        hideStudentSubscriptionModal();
     });
 
     /*выведение двух списков уроков по кновке Lessons*/
     loadLessonsBtn.addEventListener("click", loadLessonsCompleted);
     loadLessonsBtn.addEventListener("click", loadLessonsPlanned);
-    loadSubscriptionsBtn.addEventListener("click", loadTrainerSubscriptions);
+    loadSubscriptionsBtn.addEventListener("click", () => loadTrainerSubscriptions("UNPAID"));
+    document.querySelectorAll(".subscription-filter").forEach(button => {
+        button.addEventListener("click", () => loadTrainerSubscriptions(button.dataset.status));
+    });
     /*завершение урока по кнопке Completed*/
 
     completeLessonBtn.addEventListener("click", () => {
@@ -847,6 +1048,15 @@
     });
     /*отмена урока по кнопке Cancel*/
     document.getElementById("cancelLessonBtn").addEventListener("click", cancelLesson);
+    document.getElementById("changeLessonStatusBtn").addEventListener("click", () => {
+        document.getElementById("newLessonStatusChoice").selectedIndex = 0;
+        changeLessonStatusModal.classList.remove("hidden");
+    });
+    document.getElementById("closeLessonStatusModalBtn").addEventListener("click", hideChangeLessonStatusModal);
+    changeLessonStatusModal.addEventListener("click", (event) => {
+        if (event.target === changeLessonStatusModal) hideChangeLessonStatusModal();
+    });
+    document.getElementById("confirmLessonStatusBtn").addEventListener("click", changeLessonStatus);
     /*todo сохранение изменений урока по кнопке SaveChanges*/
     document.getElementById("saveChangesLessonBtn").addEventListener("click", saveChangesLesson);
     /* переход к информации об ученике из урока */
@@ -1025,14 +1235,25 @@
         });
     }
 
-    async function loadTrainerSubscriptions() {
+    let selectedSubscriptionStatus = "UNPAID";
+    let subscriptionsRequestId = 0;
+    async function loadTrainerSubscriptions(status = selectedSubscriptionStatus) {
+        const requestId = ++subscriptionsRequestId;
+        selectedSubscriptionStatus = status;
+        document.querySelectorAll(".subscription-filter").forEach(button => {
+            const active = button.dataset.status === status;
+            button.classList.toggle("active", active);
+            button.setAttribute("aria-pressed", String(active));
+        });
         const list = document.getElementById("subscriptionsList");
         list.innerHTML = "<li>Loading...</li>";
 
         try {
-            const response = await fetch(API_BASE + "/subscriptions", {
+            const response = await fetch(API_BASE + "/subscriptions/" + encodeURIComponent(status), {
                 credentials: "same-origin"
             });
+
+            if (requestId !== subscriptionsRequestId) return;
 
             if (!response.ok) {
                 list.innerHTML = "<li>Error loading subscriptions</li>";
@@ -1040,8 +1261,10 @@
             }
 
             const subscriptions = await response.json();
+            if (requestId !== subscriptionsRequestId) return;
             renderTrainerSubscriptions(subscriptions);
         } catch (error) {
+            if (requestId !== subscriptionsRequestId) return;
             console.error("Error loading subscriptions:", error);
             list.innerHTML = "<li>Error loading subscriptions</li>";
         }
@@ -1189,6 +1412,8 @@
             }
 
             await loadTrainerSubscriptionDetails(subscriptionId);
+            await loadTrainerSubscriptions();
+            alert("Subscription changed successfully");
         } catch (error) {
             console.error("Error changing subscription:", error);
             alert("Failed to change subscription");
@@ -1251,6 +1476,10 @@
             ?? null;
     }
 
+    function getSubscriptionTypeInfo(subscriptionType) {
+        return subscriptionType.info ?? "";
+    }
+
     function renderSubscriptionTypes(subscriptionTypes) {
         const container = document.getElementById("mySubscriptionsList");
         container.innerHTML = "";
@@ -1267,17 +1496,37 @@
             const row = document.createElement("div");
             row.className = "subscription-row";
 
-            const text = document.createElement("div");
-            text.className = "subscription-text";
-            text.textContent = subscriptionTypeToString(subscriptionType);
+            const details = document.createElement("div");
+            details.className = "subscription-details";
+
+            const title = document.createElement("div");
+            title.className = "subscription-title";
+            title.textContent = subscriptionTypeToString(subscriptionType);
+
+            const info = document.createElement("textarea");
+            info.className = "subscription-info";
+            info.value = getSubscriptionTypeInfo(subscriptionType);
+            details.appendChild(title);
+            details.appendChild(info);
+
+            const actions = document.createElement("div");
+            actions.className = "subscription-actions";
 
             const deleteBtn = document.createElement("button");
             deleteBtn.type = "button";
             deleteBtn.textContent = "Delete";
             deleteBtn.addEventListener("click", () => deactivateSubscriptionType(getSubscriptionTypeId(subscriptionType)));
 
-            row.appendChild(text);
-            row.appendChild(deleteBtn);
+            const changeInfoBtn = document.createElement("button");
+            changeInfoBtn.type = "button";
+            changeInfoBtn.textContent = "Change info";
+            changeInfoBtn.addEventListener("click", () => changeSubscriptionTypeInfo(subscriptionType, info.value));
+
+            actions.appendChild(deleteBtn);
+            actions.appendChild(changeInfoBtn);
+
+            row.appendChild(details);
+            row.appendChild(actions);
             container.appendChild(row);
         });
     }
@@ -1333,6 +1582,38 @@
         }
     }
 
+    async function changeSubscriptionTypeInfo(subscriptionType, updatedInfo) {
+        const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+        const id = getSubscriptionTypeId(subscriptionType);
+
+        if (!id) {
+            alert("Subscription type id not found");
+            return;
+        }
+
+        try {
+            const response = await fetch(API_BASE + "/subscription_types/" + id + "/change_info", {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "text/plain;charset=UTF-8",
+                    "X-XSRF-TOKEN": csrf
+                },
+                body: updatedInfo
+            });
+
+            if (!response.ok) {
+                alert("Failed to change subscription type info");
+                return;
+            }
+
+            await loadSubscriptionTypes();
+        } catch (error) {
+            console.error("Error changing subscription type info:", error);
+            alert("Failed to change subscription type info");
+        }
+    }
+
     async function createSubscriptionType() {
         const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
 
@@ -1379,6 +1660,7 @@ let currentStudentId = null;
     async function loadStudentDetails(id) {
         try {
             const response = await fetch(API_BASE + "/user/" + id);
+            if (!response.ok) throw new Error("Failed to load student");
             const student = await response.json();
             // Здесь выводим данные на страницу
             document.getElementById("studentName").value = student.name ?? "";
@@ -1388,138 +1670,91 @@ let currentStudentId = null;
             document.getElementById("studentBalance").value = student.balance ?? 0;
             document.getElementById("studentPlans").value = student.plans ?? "";
             currentStudentId = student.id;
-
-            renderScheduleBlock(student.scheduleDtos ?? []);
             // Показываем блок с информацией
             document.getElementById("studentDetails").classList.remove("hidden");
+            await Promise.all([
+                loadStudentPlannedLessons(student.id),
+                loadStudentCurrentSubscriptions(student.id)
+            ]);
         } catch (error) {
             console.error("Error loading student:", error);
              alert("Failed to load the student data.");
         }
     }
 
-    function renderScheduleBlock(scheduleDtos) {
-        const list = document.getElementById("studentScheduleList");
-        list.innerHTML = "";
-
-        if (!Array.isArray(scheduleDtos) || scheduleDtos.length === 0) {
-            const empty = document.createElement("div");
-            empty.className = "schedule-empty";
-            empty.textContent = "Not set";
-            list.appendChild(empty);
-            return;
-        }
-
-        scheduleDtos.forEach(s => {
-            const row = document.createElement("div");
-            row.className = "schedule-row";
-
-            const text = document.createElement("span");
-            text.textContent = s.dateTime;
-
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.textContent = "Delete";
-            btn.addEventListener("click", () => deleteSchedule(s.id));
-
-            row.appendChild(text);
-            row.appendChild(btn);
-            list.appendChild(row);
-        });
-    }
-
-    async function refreshScheduleOnly() {
-        if (!currentStudentId) {
-            console.warn("No currentStudentId set, cannot refresh schedule");
-            return;
-        }
-
+    async function loadStudentPlannedLessons(studentId) {
+        const list = document.getElementById("studentPlannedLessons");
+        list.textContent = "Loading...";
         try {
-            const response = await fetch(
-                API_BASE + "/user/" + currentStudentId + "/schedules",
-                { credentials: "same-origin" }
-            );
-
-            if (!response.ok) {
-                console.error("Refresh failed:", response.status, response.statusText);
-                alert("Failed to refresh the schedule.");
+            const response = await fetch(API_BASE + "/user/" + encodeURIComponent(studentId) + "/lessons_planned");
+            if (!response.ok) throw new Error("Failed to load planned lessons");
+            const lessons = await response.json();
+            if (currentStudentId !== studentId) return;
+            list.replaceChildren();
+            if (lessons.length === 0) {
+                const item = document.createElement("li");
+                item.textContent = "No planned lessons";
+                list.appendChild(item);
                 return;
             }
-
-            const schedules = await response.json();
-            renderScheduleBlock(schedules);
-
-        } catch (e) {
-            console.error("Refresh schedule error:", e);
-            alert("An error occurred while refreshing the schedule.");
-        }
-    }
-
-        async function deleteSchedule(scheduleId) {
-            const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
-
-            try {
-                const response = await fetch(API_BASE + "/user/schedule_delete/" + scheduleId, {
-                  method: "DELETE",
-                  credentials: "same-origin",
-                  headers: {
-                    "X-XSRF-TOKEN": csrf
-                  }
+            lessons.forEach(lesson => {
+                const item = document.createElement("li");
+                const link = document.createElement("a");
+                link.href = "#";
+                link.textContent = formatLessonDate(lesson.startTime);
+                link.addEventListener("click", event => {
+                    event.preventDefault();
+                    loadLessonDetails(lesson.id);
                 });
-
-                if (!response.ok) {
-                  console.error("Delete schedule failed:", response.status, response.statusText);
-                  alert("Failed to delete the schedule.");
-                  return;
-                }
-                await refreshScheduleOnly();
-
-            } catch (e) {
-                console.error("Delete schedule error:", e);
-                alert("An error occurred while deleting the schedule.");
-            }
+                item.appendChild(link);
+                list.appendChild(item);
+            });
+        } catch (error) {
+            console.error("Error loading planned lessons:", error);
+            if (currentStudentId === studentId) list.textContent = "Could not load planned lessons";
+        }
     }
 
-    document.getElementById("addScheduleBtn").addEventListener("click", addSchedule);
-
-    async function addSchedule() {
-      const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
-      const input = document.getElementById("scheduleInput");
-      const currentStudentId = document.getElementById("studentId").value;
-      const value = (input.value || "").trim();
-
-      if (!currentStudentId) {
-        alert("Please select a student first.");
-        return;
-      }
-      if (!value) {
-        alert("Please enter a schedule value (e.g. WEDNESDAY 10:00).");
-        return;
-      }
-
-      try {
-        const response = await fetch(API_BASE + "/user/schedule_add/" + currentStudentId, {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            "X-XSRF-TOKEN": csrf
-          },
-          body: JSON.stringify({ dateTime: value })
-        });
-
-        if (!response.ok) {
-          console.error("Add schedule failed:", response.status, response.statusText);
-          alert("Failed to add the schedule.");
-          return;
+    async function loadStudentCurrentSubscriptions(studentId) {
+        const list = document.getElementById("studentCurrentSubscriptions");
+        list.textContent = "Loading...";
+        try {
+            const response = await fetch(API_BASE + "/user/" + encodeURIComponent(studentId) + "/subscriptions_not_expired");
+            if (!response.ok) throw new Error("Failed to load current subscriptions");
+            const subscriptions = await response.json();
+            if (currentStudentId !== studentId) return;
+            list.replaceChildren();
+            if (subscriptions.length === 0) {
+                const item = document.createElement("li");
+                item.textContent = "No current subscriptions";
+                list.appendChild(item);
+                return;
+            }
+            subscriptions.forEach(subscription => {
+                const item = document.createElement("li");
+                const link = document.createElement("a");
+                link.href = "#";
+                link.textContent = subscription.info ?? "Subscription";
+                link.addEventListener("click", event => {
+                    event.preventDefault();
+                    loadTrainerSubscriptionDetails(subscription.id);
+                });
+                item.appendChild(link);
+                list.appendChild(item);
+            });
+        } catch (error) {
+            console.error("Error loading current subscriptions:", error);
+            if (currentStudentId === studentId) list.textContent = "Could not load current subscriptions";
         }
+    }
 
-        input.value = "";
-        await refreshScheduleOnly();
-      } catch (e) {
-        console.error("Add schedule error:", e);
-        alert("An error occurred while adding the schedule.");
-      }
+    function formatLessonDate(startTime) {
+        const match = /^(\d{2})\.(\d{2})\.(\d{2}) (\d{2}:\d{2})$/.exec(startTime ?? "");
+        if (!match) return startTime ?? "";
+        const [, day, month, year, time] = match;
+        const date = new Date(2000 + Number(year), Number(month) - 1, Number(day), 12);
+        const weekday = new Intl.DateTimeFormat("en", { weekday: "short" }).format(date);
+        return `${time} ${day}.${month}.${year} (${weekday})`;
     }
 
     async function loadLessonsCompleted() {
@@ -1541,7 +1776,7 @@ let currentStudentId = null;
                 const li = document.createElement("li");
                 const link = document.createElement("a");
                     link.href = "#";                     // Чтобы ссылка не уходила на другую страницу
-                 link.textContent = lesson.startTime+" " +lesson.studentName+ "("+lesson.id+")";     // Что видит пользователь
+                 link.textContent = `${formatLessonDate(lesson.startTime)} ${lesson.studentName ?? ""}`.trim();
 
                     // При клике → вызываем GET /lesson/{id}
                     link.addEventListener("click", (e) => {
@@ -1577,7 +1812,7 @@ let currentStudentId = null;
                 const li = document.createElement("li");
                 const link = document.createElement("a");
                     link.href = "#";                     // Чтобы ссылка не уходила на другую страницу
-                 link.textContent = lesson.startTime+" " +lesson.studentName+ "("+lesson.id+")";     // Что видит пользователь
+                 link.textContent = `${formatLessonDate(lesson.startTime)} ${lesson.studentName ?? ""}`.trim();
                     // При клике → вызываем GET /lesson/{id}
                     link.addEventListener("click", (e) => {
                         e.preventDefault();
@@ -1605,6 +1840,7 @@ let currentStudentId = null;
             document.getElementById("lessonDuration").value = lesson.durationMin;
             document.getElementById("lessonCost").value = lesson.cost;
             document.getElementById("lessonStatus").value = lesson.status;
+            hideChangeLessonStatusModal();
             // Показываем блок с информацией
             document.getElementById("studentDetails").classList.add("hidden");
             hideNewLessonModal();
@@ -1616,6 +1852,33 @@ let currentStudentId = null;
         }
     }
 
+
+    async function changeLessonStatus() {
+        const id = document.getElementById("lessonId").value;
+        const oldStatus = document.getElementById("lessonStatus").value;
+        const newStatus = document.getElementById("newLessonStatusChoice").value;
+        if (!id || !oldStatus || !newStatus) return;
+
+        const saveButton = document.getElementById("confirmLessonStatusBtn");
+        saveButton.disabled = true;
+        try {
+            const response = await fetch(API_BASE + "/lesson/" + encodeURIComponent(id)
+                + "/change_status/" + encodeURIComponent(oldStatus) + "/to/" + encodeURIComponent(newStatus), {
+                method: "PUT",
+                credentials: "same-origin",
+                headers: {"X-XSRF-TOKEN": decodeURIComponent(getCookie("XSRF-TOKEN") || "")}
+            });
+            if (!response.ok) throw new Error("Status change failed (" + response.status + ")");
+            hideChangeLessonStatusModal();
+            await loadLessonDetails(id);
+            await Promise.all([loadLessonsCompleted(), loadLessonsPlanned()]);
+        } catch (error) {
+            console.error("Error changing lesson status:", error);
+            alert(error.message);
+        } finally {
+            saveButton.disabled = false;
+        }
+    }
 
     async function completeLesson(newInfo) {
       const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
@@ -1793,10 +2056,61 @@ let currentStudentId = null;
         }
         alert("Урок добавлен");
         hideNewLessonModal();
+        await loadStudentPlannedLessons(Number(id));
         } catch (error) {
             console.error("Error sending bill:", error);
             alert("Ошибка при добавлении урока");
         }
+    }
+
+    async function createStudentSubscription() {
+    const csrf = decodeURIComponent(getCookie("XSRF-TOKEN") || "");
+    const studentId = document.getElementById("studentId").value;
+    const subscriptionTypeId = document.getElementById("newStudentSubscriptionType").value;
+    const startDate = document.getElementById("newStudentSubscriptionStartDate").value || todayIsoDate();
+
+    if (!studentId) {
+        alert("Сначала выберите ученика");
+        return;
+    }
+    if (!subscriptionTypeId) {
+        alert("Выберите тип абонемента");
+        return;
+    }
+
+    try {
+        const response = await fetch(API_BASE + "/user/" + studentId + "/newSubscription", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json",
+                "X-XSRF-TOKEN": csrf
+            },
+            body: JSON.stringify({
+                studentId: Number(studentId),
+                subscriptionTypeId: Number(subscriptionTypeId),
+                startDate: startDate
+            })
+        });
+
+        if (!response.ok) {
+            console.error("Error:", response.status, response.statusText);
+            alert("Не удалось создать абонемент");
+            return;
+        }
+
+        const subscriptionInfo = (await response.text()).trim();
+        let successMessage = "Абонемент создан.";
+        if (subscriptionInfo) {
+            successMessage += " " + subscriptionInfo;
+        }
+        alert(successMessage);
+        hideStudentSubscriptionModal();
+        await loadStudentCurrentSubscriptions(Number(studentId));
+    } catch (error) {
+        console.error("Error creating subscription:", error);
+        alert("Ошибка при создании абонемента");
+    }
     }
 
 

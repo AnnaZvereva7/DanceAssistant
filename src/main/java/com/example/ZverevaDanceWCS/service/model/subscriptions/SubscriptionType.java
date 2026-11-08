@@ -38,7 +38,7 @@ public class SubscriptionType {
     Boolean active;
 
     @Column (name = "comment", nullable = false)
-    String comment;
+    String info;
 
     @Override
     public String toString() {

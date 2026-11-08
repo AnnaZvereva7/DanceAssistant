@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.view.RedirectView;
 
 import java.util.Map;
 
@@ -18,15 +19,16 @@ public class SessionApiController {
     public static final String CALENDAR_TOKEN_SESSION_KEY = "CALENDAR_TOKEN";
 
     @GetMapping("/auth/login/google")
-    public String startGoogle(@RequestParam("returnTo") String returnTo,
+    public RedirectView startGoogle(@RequestParam("returnTo") String returnTo,
                               @RequestParam(value = "calendarToken", required = false) String calendarToken,
                               HttpSession session) {
         log.info("Received login request with returnTo: {} and calendarToken: {}", returnTo, calendarToken);
         session.setAttribute(RETURN_TO_SESSION_KEY, returnTo);
+        session.removeAttribute(CALENDAR_TOKEN_SESSION_KEY);
         if (calendarToken != null && !calendarToken.isBlank()) {
             session.setAttribute(CALENDAR_TOKEN_SESSION_KEY, calendarToken);
         }
-        return "redirect:/oauth2/authorization/google";
+        return new RedirectView("/oauth2/authorization/google");
     }
 
     @GetMapping("/api/me")

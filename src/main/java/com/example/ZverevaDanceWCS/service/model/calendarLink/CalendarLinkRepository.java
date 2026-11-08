@@ -9,5 +9,5 @@ import java.util.Optional;
 public interface CalendarLinkRepository extends JpaRepository<CalendarLink, Long> {
 
     Optional<CalendarLink> findByTrainerIdAndExpires(Long trainerId, Boolean expires);
-    Optional<CalendarLink> findTrainerIdByToken(String token);
+    Optional<CalendarLink> findByTokenAndExpires(String token, Boolean expires);
 }

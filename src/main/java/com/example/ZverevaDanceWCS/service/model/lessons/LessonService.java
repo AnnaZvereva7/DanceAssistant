@@ -1,7 +1,7 @@
 package com.example.ZverevaDanceWCS.service.model.lessons;
 
 import com.example.ZverevaDanceWCS.service.googleCalendar.GoogleCalendarService;
-import com.example.ZverevaDanceWCS.service.model.mailCalendarEvent.LessonMailService;
+import com.example.ZverevaDanceWCS.service.model.mailService.LessonMailService;
 import com.example.ZverevaDanceWCS.service.model.exception.NotFoundException;
 import com.example.ZverevaDanceWCS.service.model.exception.UnavailableTimeException;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
@@ -41,7 +41,8 @@ public class LessonService {
     private final SubscriptionService subscriptionService;
 
     public LessonService(LessonsRepository lessonsRepository, GoogleCalendarService calendarService, UserService userService,
-                         TrainerStudentService trainerStudentService, FreeSlotService slotService, LessonMailService lessonMailService, SubscriptionTypeService subscriptionTypeService, SubscriptionService subscriptionService) {
+                         TrainerStudentService trainerStudentService, FreeSlotService slotService, LessonMailService lessonMailService,
+                         SubscriptionTypeService subscriptionTypeService, SubscriptionService subscriptionService) {
         this.lessonsRepository = lessonsRepository;
         this.calendarService = calendarService;
         this.userService = userService;
@@ -96,6 +97,10 @@ public class LessonService {
 
     public List<Lesson> findByStatusAndStudentId(LessonStatus status, Long id) {
         return lessonsRepository.findByStatusAndStudentId(status, id);
+    }
+
+    public List<Lesson> findByStatusInAndStudentIdAndTrainerId(List<LessonStatus> statuses, Long studentId, Long trainerId) {
+        return lessonsRepository.findByStatusInAndStudentIdAndTrainerId(statuses, studentId, trainerId);
     }
 
     public List<Lesson> findByStatusInAndStudentId(List<LessonStatus> statuses, Long id) {
@@ -386,7 +391,7 @@ public class LessonService {
         }
     }
 
-    public void addNewSubscription(StudentSubscriptionNewDTO dto, Long userId) {
+    public StudentSubscription addNewSubscription(StudentSubscriptionNewDTO dto, Long userId) {
         User student = userService.findById(userId);
         SubscriptionType subscriptionType = subscriptionTypeService.findById(dto.getSubscriptionTypeId());
         User trainer =userService.findById(subscriptionType.getTrainerId());
@@ -400,7 +405,8 @@ public class LessonService {
         subscription.setRemainingLessons(subscriptionType.getAmountLessons());
         subscription.setCreatedAt(LocalDateTime.now());
         subscription.setStatus(SubscriptionStatus.UNPAID);
-        subscriptionService.saveSubscription(subscription);
+        subscription.setPrice(subscriptionType.getPrice());
+        return subscriptionService.saveSubscription(subscription);
     }
 
     public StudentSubscriptionFullDTO getStudentSubscriptionFullDTO(Long subscriptionId, Long trainerId) {
@@ -410,6 +416,33 @@ public class LessonService {
         }
         List<Lesson> lessons = subscriptionService.getLessonsBySubscriptionId(subscriptionId);
         return new StudentSubscriptionFullDTO(subscription, lessons);
+    }
+
+    public Lesson changeLessonStatus(Long lessonId, LessonStatus oldStatus,LessonStatus newStatus, Long trainerId) {
+        Lesson lesson = findById(lessonId);
+        if(!lesson.getTrainer().getId().equals(trainerId)) {
+            throw new RuntimeException("You are not authorized to change this lesson status");
+        }
+        if(lesson.getStatus()!=oldStatus){
+            throw new RuntimeException("Lesson status is not "+oldStatus);
+        }
+        if(oldStatus==LessonStatus.COMPLETED&&(newStatus==LessonStatus.PENDING_STUDENT_CONFIRMATION
+                ||newStatus==LessonStatus.PLANNED)){
+            lesson.setStatus(newStatus);
+            lesson.setForPayment(lesson.getCost());
+            updateLessonInBase(lesson);
+            User student=lesson.getStudent();
+            student.setBalance(student.getBalance()+lesson.getCost());
+        } else if ((oldStatus==LessonStatus.PENDING_STUDENT_CONFIRMATION
+                ||oldStatus==LessonStatus.PENDING_TRAINER_CONFIRMATION
+                ||oldStatus==LessonStatus.PLANNED)&&newStatus==LessonStatus.CANCELED_WITH_CHARGE){
+            lesson=lessonCompleted(lesson);
+            lesson.setStatus(LessonStatus.CANCELED_WITH_CHARGE);
+            updateLessonInBase(lesson);
+        } else {
+            throw new RuntimeException("Invalid status change from "+oldStatus+" to "+newStatus);
+        }
+        return lesson;
     }
 
 
