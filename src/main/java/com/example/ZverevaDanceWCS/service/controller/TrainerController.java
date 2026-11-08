@@ -365,8 +365,6 @@ public class TrainerController {
         subscriptionTypeService.changeSubscriptionTypeInfo(id, updatedInfo, trainer.getId());
     }
 
-    @PutMapping ("/subscription/{id}")
-
     @PostMapping("/user/{studentId}/newSubscription")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void addNewSubscriptionByTrainer(@PathVariable Long studentId, HttpSession session, @RequestBody StudentSubscriptionNewDTO subscriptionDto) {

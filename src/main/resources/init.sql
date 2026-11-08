@@ -141,3 +141,5 @@
         lesson_id BIGINT REFERENCES lessons(lesson_id) ON DELETE CASCADE,
         subscription_id BIGINT REFERENCES students_subscriptions(student_subscription_id) ON DELETE CASCADE
     );
+
+
