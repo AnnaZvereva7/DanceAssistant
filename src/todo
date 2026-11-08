@@ -1,0 +1,10 @@
+1. button remove lesson from subscription - change lesson status, amount lessons in subscription and maybe status of subscription
+2. change balance of user from trainer mode
+3. change price of single lesson in trainer profile
+4. change cost of completed lesson
+5. check that payment for subscription in payment info
+6. changes in init.sql
+
+
+7. tikkie
+8. orders to students email after tikkie payment
