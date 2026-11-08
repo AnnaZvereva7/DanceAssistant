@@ -10,6 +10,8 @@ import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonShortDT
 import com.example.ZverevaDanceWCS.service.model.lessons.lessonDTO.LessonUpdateDto;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentDTO;
 import com.example.ZverevaDanceWCS.service.model.payments.PaymentService;
+import com.example.ZverevaDanceWCS.service.model.payments.PeriodDTO;
+import com.example.ZverevaDanceWCS.service.model.payments.TransactionDataDao;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.StudentSubscription;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionService;
 import com.example.ZverevaDanceWCS.service.model.subscriptions.SubscriptionStatus;
@@ -38,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -386,5 +389,20 @@ public class TrainerController {
         List<StudentSubscription> subscriptions = subscriptionService
                 .getSubscriptionByTrainerIdAndStudentIdAndStatusIn(trainer.getId(), studentId, List.of(SubscriptionStatus.ACTIVE, SubscriptionStatus.UNPAID));
         return subscriptions.stream().map(subscription -> new StudentSubscriptionDTO(subscription, trainer.getRole())).toList();
+    }
+
+    @GetMapping("/user/{studentId}/payments")
+    public List<TransactionDataDao> getStudentPayments(@PathVariable Long studentId, HttpSession session, @ModelAttribute PeriodDTO periodDTO) {
+        User trainer = findTrainerFromSession(session);
+        if (periodDTO.getStartDate() == null || periodDTO.getEndDate() == null
+                || periodDTO.getStartDate().isAfter(periodDTO.getEndDate())) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid payment period");
+        }
+        List<TransactionDataDao> payments = paymentService.findByStudentAndPeriod(studentId, periodDTO.getStartDate(), periodDTO.getEndDate())
+                .stream()
+                .filter(payment -> Objects.equals(payment.getTrainerId(), trainer.getId()))
+                .map(payment -> TransactionDataDao.fromPayment(payment))
+                .toList();
+        return payments;
     }
 }

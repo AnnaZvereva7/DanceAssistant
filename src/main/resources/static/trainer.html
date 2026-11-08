@@ -130,6 +130,12 @@
             border-color: rgba(59,130,246,.35);
         }
 
+        .student-view-switch button.active {
+            background: linear-gradient(180deg, rgba(126,231,135,.95), rgba(126,231,135,.65));
+            border-color: #22c55e;
+            color: #04120a;
+        }
+
         .subscription-filter.active {
             background: linear-gradient(180deg, rgba(126,231,135,.95), rgba(126,231,135,.65));
             border-color: #22c55e;
@@ -158,8 +164,6 @@
         #saveChangesLessonBtn,
         #toStudent,
         #sendEmailInvitationBtn,
-        #sendBillBtn,
-        #paidBtn,
         #deleteSubscriptionBtn,
         #changeSubscriptionBtn,
         #paidSubscriptionBtn,
@@ -383,6 +387,7 @@
         #studentDetails,
         #lessonDetails,
         #paymentDetails,
+        #balanceDetails,
         #subscriptionDetails {
             background: transparent;
         }
@@ -391,6 +396,7 @@
         #studentDetails h3,
         #lessonDetails h3,
         #paymentDetails h3,
+        #balanceDetails h3,
         #subscriptionDetails h3 {
             margin-top: 0;
             margin-bottom: 14px;
@@ -517,6 +523,10 @@
             </div>
         </div>
         <div id="studentDetails" class="hidden">
+            <div class="student-view-switch" aria-label="Student view">
+                <button type="button" class="active" aria-current="page">Student details</button>
+                <button type="button" id="studentPaymentsViewBtn">Payment details</button>
+            </div>
             <h3>Student details</h3>
             <label>Student Id:
                 <input type="number" id="studentId"></input>
@@ -661,27 +671,47 @@
         </div>
 
         <div id="paymentDetails" class="hidden">
+            <div class="student-view-switch" aria-label="Student view">
+                <button type="button" id="paymentStudentViewBtn">Student details</button>
+                <button type="button" class="active" aria-current="page">Payment details</button>
+            </div>
             <h3>Payment details</h3>
             <label>
-                <input type="hidden" id="studentIdBalance">
+                <input type="hidden" id="studentPaymentsStudentId">
             </label>
             <label>StudentName:
                 <input type="text" id="student">
             </label>
 
+            <div>
+                <label>From:
+                    <input type="date" id="studentPaymentsStartDate">
+                </label>
+                <label>To:
+                    <input type="date" id="studentPaymentsEndDate">
+                </label>
+                <button type="button" id="loadStudentPaymentsBtn">Load payments</button>
+            </div>
+            <ul id="studentPaymentsList" aria-label="Payments in selected period"></ul>
+        </div>
+
+        <div id="balanceDetails" class="hidden">
+            <h3>Payment details</h3>
+            <input type="hidden" id="studentIdBalance">
+            <label>Student Name:
+                <input type="text" id="balanceStudentName" readonly>
+            </label>
             <label>Completed Lessons:
-                <textarea id="completedLessons" rows="10"> </textarea>
+                <textarea id="completedLessons" rows="10" readonly></textarea>
             </label>
-
             <label>Balance:
-                <input type="number" id="balance">
+                <input type="number" id="balance" readonly>
             </label>
-
             <label>Payment:
                 <input type="number" id="payment">
             </label>
-            <button id="sendBillBtn">SendBill</button>
-            <button id="paidBtn">Paid</button>
+            <button id="sendBillBtn" type="button">SendBill</button>
+            <button id="paidBtn" type="button">Paid</button>
         </div>
 
         <div id="subscriptionDetails" class="hidden">
@@ -743,6 +773,7 @@
     const studentDetails = document.getElementById("studentDetails");
     const paymentTab = document.getElementById("paymentTab");
     const paymentDetails = document.getElementById("paymentDetails");
+    const balanceDetails = document.getElementById("balanceDetails");
     const subscriptionsTab = document.getElementById("subscriptionsTab");
     const subscriptionDetails = document.getElementById("subscriptionDetails");
     const addNewLessonBtn = document.getElementById("addNewLessonBtn");
@@ -872,6 +903,7 @@
         studentDetails.classList.add("hidden");
         paymentTab.classList.add("hidden");
         paymentDetails.classList.add("hidden");
+        balanceDetails.classList.add("hidden");
         studentsTab.classList.add("hidden");
         subscriptionsTab.classList.add("hidden");
         subscriptionDetails.classList.add("hidden");
@@ -935,6 +967,7 @@
         studentDetails.classList.add("hidden");
        paymentTab.classList.add("hidden");
        paymentDetails.classList.add("hidden");
+       balanceDetails.classList.add("hidden");
         subscriptionsTab.classList.add("hidden");
         subscriptionDetails.classList.add("hidden");
         myDetails.classList.add("hidden");
@@ -1068,6 +1101,17 @@
         hideNewLessonModal();
         hideNewInfoModal();
     });
+    document.getElementById("studentPaymentsViewBtn").addEventListener("click", () => {
+        const studentId = document.getElementById("studentId").value;
+        if (studentId) loadPaymentDetails(studentId);
+    });
+    document.getElementById("paymentStudentViewBtn").addEventListener("click", () => {
+        const studentId = document.getElementById("studentPaymentsStudentId").value;
+        if (studentId) loadStudentDetails(studentId);
+    });
+    document.getElementById("loadStudentPaymentsBtn").addEventListener("click", loadStudentPayments);
+    document.getElementById("sendBillBtn").addEventListener("click", sendBill);
+    document.getElementById("paidBtn").addEventListener("click", addPayment);
     document.getElementById("sendEmailInvitationBtn").addEventListener("click", sendEmailInvitation);
 
 
@@ -1082,6 +1126,7 @@
         subscriptionDetails.classList.add("hidden");
         hideCompleteLessonModal();
         paymentDetails.classList.add("hidden");
+        balanceDetails.classList.add("hidden");
         hideNewLessonModal();
         hideNewInfoModal();
         hideNewSubscriptionModal();
@@ -1098,6 +1143,7 @@
        lessonDetails.classList.add("hidden");
         subscriptionDetails.classList.add("hidden");
         paymentDetails.classList.add("hidden");
+        balanceDetails.classList.add("hidden");
         lessonsTab.classList.add("hidden");
         subscriptionsTab.classList.add("hidden");
         hideNewLessonModal();
@@ -1115,6 +1161,7 @@
         lessonDetails.classList.add("hidden");
         paymentTab.classList.add("hidden");
         paymentDetails.classList.add("hidden");
+        balanceDetails.classList.add("hidden");
         hideNewLessonModal();
         hideNewInfoModal();
         hideNewSubscriptionModal();
@@ -1122,8 +1169,6 @@
         myDetails.classList.add("hidden");
     });
 
-    document.getElementById("sendBillBtn").addEventListener("click", sendBill);
-    document.getElementById("paidBtn").addEventListener("click", addPayment);
     document.getElementById("deleteSubscriptionBtn").addEventListener("click", deleteSubscription);
     document.getElementById("changeSubscriptionBtn").addEventListener("click", changeSubscription);
     document.getElementById("paidSubscriptionBtn").addEventListener("click", markSubscriptionPaid);
@@ -1672,6 +1717,8 @@ let currentStudentId = null;
             currentStudentId = student.id;
             // Показываем блок с информацией
             document.getElementById("studentDetails").classList.remove("hidden");
+            paymentDetails.classList.add("hidden");
+            balanceDetails.classList.add("hidden");
             await Promise.all([
                 loadStudentPlannedLessons(student.id),
                 loadStudentCurrentSubscriptions(student.id)
@@ -1936,7 +1983,7 @@ let currentStudentId = null;
                     // При клике → вызываем GET /user/balance/{id}
                     link.addEventListener("click", (e) => {
                         e.preventDefault();
-                        loadPaymentDetails(payment.studentId);  // <-- вызываем твою функцию загрузки ученика
+                        loadBalanceDetails(payment.studentId);
                      });
                  li.appendChild(link);
                  list.appendChild(li);
@@ -1951,16 +1998,86 @@ let currentStudentId = null;
     async function loadPaymentDetails(studentId) {
         try {
             const response = await fetch(API_BASE + "/user/balance/" + studentId);
+            if (!response.ok) throw new Error("Failed to load payment details");
             const paymentInfo = await response.json();
             // Здесь выводим данные на страницу
-            document.getElementById("studentIdBalance").value = paymentInfo.studentId;
+            document.getElementById("studentPaymentsStudentId").value = paymentInfo.studentId;
             document.getElementById("student").value = paymentInfo.studentName;
-            document.getElementById("completedLessons").value = (paymentInfo.completedLessons || []).join("\n");
-            document.getElementById("balance").value = paymentInfo.balance;
             // Показываем блок с информацией
             document.getElementById("paymentDetails").classList.remove("hidden");
+            studentDetails.classList.add("hidden");
+            balanceDetails.classList.add("hidden");
+            setDefaultStudentPaymentsPeriod();
+            await loadStudentPayments();
         } catch (error) {
             console.error("Error loading payment details:", error);
+        }
+    }
+
+    async function loadBalanceDetails(studentId) {
+        try {
+            const response = await fetch(API_BASE + "/user/balance/" + studentId);
+            if (!response.ok) throw new Error("Failed to load balance details");
+            const paymentInfo = await response.json();
+            document.getElementById("studentIdBalance").value = paymentInfo.studentId;
+            document.getElementById("balanceStudentName").value = paymentInfo.studentName;
+            document.getElementById("completedLessons").value = (paymentInfo.completedLessons || []).join("\n");
+            document.getElementById("balance").value = paymentInfo.balance;
+            balanceDetails.classList.remove("hidden");
+            paymentDetails.classList.add("hidden");
+            studentDetails.classList.add("hidden");
+        } catch (error) {
+            console.error("Error loading balance details:", error);
+        }
+    }
+
+    function setDefaultStudentPaymentsPeriod() {
+        const today = new Date();
+        const lastDayOfStartMonth = new Date(today.getFullYear(), today.getMonth() - 1, 0).getDate();
+        const start = new Date(today.getFullYear(), today.getMonth() - 2,
+                Math.min(today.getDate(), lastDayOfStartMonth));
+        const localDate = date => {
+            const timezoneOffsetMs = date.getTimezoneOffset() * 60000;
+            return new Date(date.getTime() - timezoneOffsetMs).toISOString().slice(0, 10);
+        };
+        document.getElementById("studentPaymentsStartDate").value = localDate(start);
+        document.getElementById("studentPaymentsEndDate").value = localDate(today);
+    }
+
+    async function loadStudentPayments() {
+        const studentId = document.getElementById("studentPaymentsStudentId").value;
+        const startDate = document.getElementById("studentPaymentsStartDate").value;
+        const endDate = document.getElementById("studentPaymentsEndDate").value;
+        const list = document.getElementById("studentPaymentsList");
+        if (!studentId || !startDate || !endDate || startDate > endDate) {
+            list.textContent = "Choose a valid date period";
+            return;
+        }
+        list.textContent = "Loading...";
+        try {
+            const params = new URLSearchParams({ startDate, endDate });
+            const response = await fetch(API_BASE + "/user/" + encodeURIComponent(studentId) + "/payments?" + params);
+            if (!response.ok) throw new Error("Failed to load payments");
+            const payments = await response.json();
+            if (document.getElementById("studentPaymentsStudentId").value !== studentId) return;
+            list.replaceChildren();
+            if (payments.length === 0) {
+                const item = document.createElement("li");
+                item.textContent = "No payments in this period";
+                list.appendChild(item);
+                return;
+            }
+            payments.forEach(payment => {
+                const item = document.createElement("li");
+                const date = payment.date?.split("-").reverse().join(".") ?? "";
+                item.textContent = `${date} ${payment.type ?? "Payment"}: ${payment.amount ?? 0} EUR`;
+                list.appendChild(item);
+            });
+        } catch (error) {
+            console.error("Error loading student payments:", error);
+            if (document.getElementById("studentPaymentsStudentId").value === studentId) {
+                list.textContent = "Could not load payments";
+            }
         }
     }
 
@@ -2010,7 +2127,7 @@ let currentStudentId = null;
             return;
         }
         const updatedBalance = await response.json();
-        await loadPaymentDetails(id);
+        await loadBalanceDetails(id);
         alert("Оплата внесена");
         document.getElementById("payment").value = "";
         } catch (error) {
